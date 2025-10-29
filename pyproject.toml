@@ -1,0 +1,16 @@
+[project]
+name = "django-db-embedding"
+version = "0.0.1"
+description = "A Django app to integrate Database vector embeddings for semantic search."
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2.7",
+    "djangorestframework>=3.16.1",
+    "psycopg[binary]>=3.2.12",
+]
+
+[dependency-groups]
+dev = [
+    "gunicorn>=23.0.0",
+    "unicorn>=2.1.4",
+]
