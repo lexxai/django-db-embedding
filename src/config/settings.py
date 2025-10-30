@@ -142,8 +142,30 @@ STATIC_ROOT = BASE_DIR.parent / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
 
-CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL")
+REDIS_URL = environ.get("REDIS_URL")
+
+if REDIS_URL:
+    try:
+        import redis
+
+        redis_connection = redis.from_url(REDIS_URL)
+        redis_connection.ping()
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.redis.RedisCache",
+                "LOCATION": REDIS_URL,
+            }
+        }
+        SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+        print("Redis connection activated")
+    except Exception as e:
+        print("Redis connection error")
+
+
+CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 
 VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536))

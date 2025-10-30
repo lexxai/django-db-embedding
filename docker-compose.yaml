@@ -1,3 +1,5 @@
+# docker compose build backend && docker compose up --build -d && docker compose logs -f backend
+
 name: db-embedding
 services:
   db:
@@ -19,12 +21,12 @@ services:
       - "6379:6379"
 
 
-  app:
+  backend:
     build:
       context: .
 
     volumes:
-      - ./src/db_embedding:/app/src
+      - ./src:/app/src
       - staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
@@ -35,14 +37,14 @@ services:
       - .env
 
 
-  celery:
+  celery-worker:
     build:
       context: .
-    entrypoint: celery -A config worker -l info --pool=solo --concurrency=1 --chdir ./src
     env_file:
       - .env
+    entrypoint: ./run_celery_worker.sh
     volumes:
-      - ./src/db_embedding:/app/src
+      - ./src:/app/src
     depends_on:
       - db
       - redis

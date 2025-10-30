@@ -1,6 +1,6 @@
 ARG PYTHON_VER=3.14
 
-FROM python:${PYTHON_VER} AS build
+FROM python:${PYTHON_VER} AS builder
 
 # Install uv
 # RUN pip install uv
@@ -12,20 +12,29 @@ WORKDIR /app
 
 # Install dependencies
 COPY "pyproject.toml" "uv.lock" .
-RUN uv sync --locked
+RUN uv sync --locked --no-group dev
 
 FROM python:${PYTHON_VER}-slim
 
+ARG _USER=appuser
+ARG _GROUP=appgroup
+ARG _MEDIA_DIR=/app/staticfiles
+
 # Set work directory
 WORKDIR /app
-COPY --from=build /app/.venv /app/.venv
+COPY --from=builder /app/.venv /app/.venv
+
+RUN groupadd ${_GROUP} && useradd --no-log-init -r --no-create-home -G ${_GROUP} ${_USER} && \
+    mkdir -p ${_MEDIA_DIR} && chown -R ${_USER}:${_GROUP} ${_MEDIA_DIR}
 
 # Copy project
-COPY --chmod=+x ./dockers/entrypoint.sh .
-COPY ./src/db_embedding/ .
+COPY --chmod=+x ./dockers/*.sh .
+COPY --chown=${_GROUP}:${_USER} ./src ./src
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/app/.venv/bin/:$PATH
+
+USER ${_USER}
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 

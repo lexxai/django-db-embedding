@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 from django.db import OperationalError
 from ninja import NinjaAPI
+from ninja.renderers import BaseRenderer
 
 try:
     import orjson as json
@@ -21,7 +22,16 @@ class ORJSONParser(Parser):
         return json.loads(request.body)
 
 
-api = NinjaAPI(parser=ORJSONParser())
+class ORJSONRenderer(BaseRenderer):
+    media_type = "application/json"
+
+    def render(self, request, data, *, response_status):
+        if not data:
+            return {}
+        return json.dumps(data)
+
+
+api = NinjaAPI(parser=ORJSONParser(), renderer=ORJSONRenderer())
 
 api.add_router("/items/", "items.api.router", tags=["items"])
 
@@ -36,5 +46,5 @@ def db_error_handler(request, exc):
 
 
 @api.get("/liveness", url_name="liveness", tags=["service"])
-def liveness(request):
+async def liveness(request):
     return "OK"

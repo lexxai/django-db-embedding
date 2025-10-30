@@ -7,4 +7,4 @@ from .tasks import generate_item_embedding
 @receiver(post_save, sender=Item)
 def enqueue_item_embedding(sender, instance, created, **kwargs):
     if created:
-        generate_item_embedding.delay(instance.id)
+        generate_item_embedding.apply_async(args=[instance.id])

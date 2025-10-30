@@ -7,13 +7,15 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('items', '0001_initial'),
+        ("items", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='item',
-            name='search_vector',
-            field=django.contrib.postgres.search.SearchVectorField(blank=True, null=True),
+            model_name="item",
+            name="search_vector",
+            field=django.contrib.postgres.search.SearchVectorField(
+                blank=True, null=True
+            ),
         ),
     ]

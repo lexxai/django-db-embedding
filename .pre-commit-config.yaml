@@ -1,7 +1,21 @@
 fail_fast: true
 
 
+repos:
+-   repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+    -   id: black
+        types: [ python ]
+        files: "^src/.*\\.py$"
 
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+    -   id: ruff
+        args: [check]
+        types: [ python ]
+        files: "^src/.*\\.py$"
 
 #repos:
 #  - repo: https://github.com/charliermarsh/ruff-pre-commit
@@ -23,3 +37,20 @@ fail_fast: true
 #  autoupdate_schedule: weekly
 #  skip: []
 #  submodules: false
+#repos:
+#  # Local hook for ruff (uses version from requirements.txt / pyproject.toml)
+#  - repo: local
+#    hooks:
+#      - id: ruff
+#        name: ruff (lint)
+#        entry: ruff check
+#        language: system
+#        types: [ python ]
+#        files: "^src/.*\\.py$"
+#
+#      - id: black
+#        name: black (format)
+#        entry: black
+#        language: system
+#        types: [ python ]
+#        files: "^src/.*\\.py$"
