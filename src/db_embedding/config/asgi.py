@@ -43,4 +43,4 @@ async def application(scope, receive, send):
     else:
         # Optionally handle other protocols here, or raise an error.
         # For now, we'll just ignore them.
-        pass
+        ...
