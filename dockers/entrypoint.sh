@@ -1,16 +1,12 @@
 #!/bin/bash
 
 set -e
-
-env
-
-uv pip list
-
-python src/manage.py create_vector_extension
-
+echo "Running create vector extension..."
+python src/manage.py create_vector_extension || true
+echo "Running collect static..."
+python src/manage.py collectstatic --noinput || true
 echo "Running database migrations..."
-python src/manage.py makemigrations
-python src/manage.py migrate
+python src/manage.py makemigrations --noinput && python src/manage.py migrate --noinput || true
 
 python src/manage.py createsuperuser --username admin  --noinput || true
 

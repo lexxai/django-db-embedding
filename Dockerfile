@@ -1,8 +1,6 @@
 ARG PYTHON_VER=3.14
 
-FROM python:${PYTHON_VER}
-
-
+FROM python:${PYTHON_VER} AS build
 
 # Install uv
 # RUN pip install uv
@@ -15,6 +13,12 @@ WORKDIR /app
 # Install dependencies
 COPY "pyproject.toml" "uv.lock" .
 RUN uv sync --locked
+
+FROM python:${PYTHON_VER}-slim
+
+# Set work directory
+WORKDIR /app
+COPY --from=build /app/.venv /app/.venv
 
 # Copy project
 COPY --chmod=+x ./dockers/entrypoint.sh .

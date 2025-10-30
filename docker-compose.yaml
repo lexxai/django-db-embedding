@@ -25,6 +25,7 @@ services:
 
     volumes:
       - ./src/db_embedding:/app/src
+      - staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -37,7 +38,7 @@ services:
   celery:
     build:
       context: .
-    command: celery -A config worker -l info --pool=solo --concurrency=1 --chdir ./src
+    entrypoint: celery -A config worker -l info --pool=solo --concurrency=1 --chdir ./src
     env_file:
       - .env
     volumes:
@@ -48,3 +49,4 @@ services:
 
 volumes:
   postgres_data:
+  staticfiles:
