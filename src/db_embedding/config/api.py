@@ -1,11 +1,27 @@
+import logging
 from http import HTTPStatus
 
 from django.db import OperationalError
 from ninja import NinjaAPI
-import logging
+
+try:
+    import orjson as json
+except ImportError:
+    import json
+
+from ninja.parser import Parser
 
 logger = logging.getLogger()
-api = NinjaAPI()
+
+
+class ORJSONParser(Parser):
+    def parse_body(self, request):
+        if not request.body:
+            return {}
+        return json.loads(request.body)
+
+
+api = NinjaAPI(parser=ORJSONParser())
 
 api.add_router("/items/", "items.api.router", tags=["items"])
 
