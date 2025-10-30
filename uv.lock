@@ -3,20 +3,6 @@ revision = 3
 requires-python = ">=3.12"
 
 [[package]]
-name = "adrf"
-version = "0.1.11"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "async-property" },
-    { name = "django" },
-    { name = "djangorestframework" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/71/5eee392e266a1d6603a6207ca8111192b21cb97fe7a326afc671a060bca7/adrf-0.1.11.tar.gz", hash = "sha256:03bfb677f5001104ffcc1405d45297913e9e63534b938469e7aba69fd50ccfb5", size = 17114, upload-time = "2025-10-25T09:10:16.4Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/e9/395583de343fcdf98df5fe8033320b20f532e4aea1fea9cb9df069dc515c/adrf-0.1.11-py3-none-any.whl", hash = "sha256:55665f582d8c9ad77ba012a442705a1c4dd556b733df7a987ad7b6a89432702f", size = 20089, upload-time = "2025-10-25T09:10:14.968Z" },
-]
-
-[[package]]
 name = "amqp"
 version = "5.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -58,15 +44,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/46/08/4dfec9b90758a59acc6be32ac82e98d1fbfc321cb5cfa410436dbacf821c/asgiref-3.10.0.tar.gz", hash = "sha256:d89f2d8cd8b56dada7d52fa7dc8075baa08fb836560710d38c292a7a3f78c04e", size = 37483, upload-time = "2025-10-05T09:15:06.557Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/9c/fc2331f538fbf7eedba64b2052e99ccf9ba9d6888e2f41441ee28847004b/asgiref-3.10.0-py3-none-any.whl", hash = "sha256:aef8a81283a34d0ab31630c9b7dfe70c812c95eba78171367ca8745e88124734", size = 24050, upload-time = "2025-10-05T09:15:05.11Z" },
-]
-
-[[package]]
-name = "async-property"
-version = "0.2.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a7/12/900eb34b3af75c11b69d6b78b74ec0fd1ba489376eceb3785f787d1a0a1d/async_property-0.2.2.tar.gz", hash = "sha256:17d9bd6ca67e27915a75d92549df64b5c7174e9dc806b30a3934dc4ff0506380", size = 16523, upload-time = "2023-07-03T17:21:55.688Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/80/9f608d13b4b3afcebd1dd13baf9551c95fc424d6390e4b1cfd7b1810cd06/async_property-0.2.2-py2.py3-none-any.whl", hash = "sha256:8924d792b5843994537f8ed411165700b27b2bd966cefc4daeefc1253442a9d7", size = 9546, upload-time = "2023-07-03T17:21:54.293Z" },
 ]
 
 [[package]]
@@ -230,10 +207,9 @@ name = "django-db-embedding"
 version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
-    { name = "adrf" },
     { name = "celery" },
     { name = "django" },
-    { name = "djangorestframework" },
+    { name = "django-ninja" },
     { name = "openai" },
     { name = "pgvector" },
     { name = "psycopg", extra = ["binary", "pool"] },
@@ -250,10 +226,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "adrf", specifier = ">=0.1.11" },
     { name = "celery", specifier = ">=5.5.3" },
     { name = "django", specifier = ">=5.2.7" },
-    { name = "djangorestframework", specifier = ">=3.16.1" },
+    { name = "django-ninja", specifier = ">=1.4.5" },
     { name = "openai", specifier = ">=2.6.1" },
     { name = "pgvector", specifier = ">=0.4.1" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2.12" },
@@ -269,15 +244,16 @@ dev = [
 ]
 
 [[package]]
-name = "djangorestframework"
-version = "3.16.1"
+name = "django-ninja"
+version = "1.4.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
+    { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/95/5376fe618646fde6899b3cdc85fd959716bb67542e273a76a80d9f326f27/djangorestframework-3.16.1.tar.gz", hash = "sha256:166809528b1aced0a17dc66c24492af18049f2c9420dbd0be29422029cfc3ff7", size = 1089735, upload-time = "2025-08-06T17:50:53.251Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/9a/558489e0e25173772fbd826306b7d1777e80285b02d69e0e1aaec41e3eec/django_ninja-1.4.5.tar.gz", hash = "sha256:aa1a2ee2b22c5f1c2f4bfbc004386be7074cbfaf133680c2b359a31221965503", size = 3710511, upload-time = "2025-10-19T18:28:02.362Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/ce/bf8b9d3f415be4ac5588545b5fcdbbb841977db1c1d923f7568eeabe1689/djangorestframework-3.16.1-py3-none-any.whl", hash = "sha256:33a59f47fb9c85ede792cbf88bde71893bcda0667bc573f784649521f1102cec", size = 1080442, upload-time = "2025-08-06T17:50:50.667Z" },
+    { url = "https://files.pythonhosted.org/packages/49/e3/168274a8def4b9a2fb2540319a68914e8e4e529cd7f7b5f1ba8939d011bc/django_ninja-1.4.5-py3-none-any.whl", hash = "sha256:d779702ddc6e17b10739049ddb075a6a1e6c6270bdc04e0b0429f6adbf670373", size = 2426449, upload-time = "2025-10-19T18:28:00.518Z" },
 ]
 
 [[package]]
