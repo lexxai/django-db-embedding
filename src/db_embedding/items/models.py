@@ -9,7 +9,7 @@ class Item(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     # Optional: full-text search vector
-    search_vector = SearchVectorField(null=True)
+    search_vector = SearchVectorField(null=True, blank=True)
 
 
 class ItemEmbedding(models.Model):

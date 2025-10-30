@@ -13,6 +13,7 @@ dependencies = [
     "psycopg[binary,pool]>=3.2.12",
     "python-dotenv>=1.2.1",
     "redis[hiredis]>=7.0.1",
+    "whitenoise[brotli]>=6.11.0",
 ]
 
 [dependency-groups]

@@ -1,4 +1,6 @@
 ## APP
+# DJANGO_SUPERUSER_PASSWORD=change_me
+# DJANGO_SUPERUSER_EMAIL=admin@example.com
 
 # APP_WORKERS=1
 

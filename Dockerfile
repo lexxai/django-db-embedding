@@ -1,6 +1,6 @@
 ARG PYTHON_VER=3.14
 
-FROM python:${PYTHON_VER}-slim
+FROM python:${PYTHON_VER}
 
 
 
