@@ -1,0 +1,22 @@
+## DATABASE
+
+# DB_ENGINE=django.db.backends.postgresql
+# DB_NAME=postgres
+# DB_USER=postgres
+DB_PASSWORD=change_me
+# DB_HOST=db
+# DB_PORT=5432
+# DB_POOL=True
+
+# CELERY
+# CELERY_BROKER_URL=redis://redis:6379/0
+# CELERY_RESULT_BACKEND=CELERY_BROKER_URL
+
+
+
+## EMBEDDINGS
+
+# VECTOR_EMBEDDIG_DIMENSIONS=1536
+# OPENAI_API_KEY=change_me
+# OPENAI_API_BASE=
+# EMBEDDIG_MODEL_NAME=text-embedding-3-small

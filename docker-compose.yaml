@@ -1,0 +1,44 @@
+name: db-embedding
+services:
+  db:
+    image: postgres:${DB_VERSION:-18}
+    environment:
+      - POSTGRES_DB=${DB_NAME:-postgres}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/${DB_VERSION:-18}/docker
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  redis:
+    image: "redis:alpine"
+
+  app:
+    build:
+      context: .
+
+    volumes:
+      - ./src:/app/src
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+
+  celery:
+    build:
+      context: .
+    command: celery -A config worker -l info --pool=solo
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
