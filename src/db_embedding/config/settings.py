@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import os
 from os import environ
 from pathlib import Path
-from dotenv import load_dotenv
 
+from django.utils.translation import gettext_lazy as _
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ SECRET_KEY = environ.get("SECRET_KEY", "super-secret-key")
 DEBUG = environ.get("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = environ.get("ALLOWED_HOSTS", "*").split(",")
-
+SERVE_STATIC_FILES = environ.get("SERVE_STATIC_FILES", "False").lower() == "true"
 
 # Application definition
 
@@ -40,13 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
     "items",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -54,6 +52,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if SERVE_STATIC_FILES:
+    MIDDLEWARE.insert(0, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 
 ROOT_URLCONF = "config.urls"
 
@@ -89,6 +91,8 @@ DATABASES = {
         "PORT": environ.get("DB_PORT", "5432"),
         "OPTIONS": {
             "pool": environ.get("DB_POOL", "True").lower() == "true",
+            "options": "-c statement_timeout=5000",
+            "connect_timeout": 5,
         },
     },
 }
@@ -116,21 +120,23 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en-gb"
 
-
-TIME_ZONE = "UTC"
-
+TIME_ZONE = "Europe/Kyiv"
 USE_I18N = True
-
 USE_TZ = True
+
+LANGUAGES = [
+    ("ua", _("Ukrainian")),
+    ("en", _("English")),
+]
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR.parent / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
