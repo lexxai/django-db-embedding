@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from os import environ
 from pathlib import Path
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,13 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-o9%j)bxz&2r+&(hufvudc=qyyb@^ckrophf2mkvc^u#+fbnlj!"
+SECRET_KEY = environ.get("SECRET_KEY", "super-secret-key")
+DEBUG = environ.get("DEBUG", "False").lower() == "true"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = environ.get("ALLOWED_HOSTS", "*").split(",")
 
 
 # Application definition
@@ -37,7 +40,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "items"
+    "rest_framework",
+    "items",
 ]
 
 MIDDLEWARE = [
@@ -68,6 +72,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 
 # Database
@@ -75,9 +80,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR.parent.parent / "data/database/db.sqlite3",
-    }
+        "ENGINE": environ.get("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": environ.get("DB_NAME", "postgres"),
+        "USER": environ.get("DB_USER", "postgres"),
+        "PASSWORD": environ.get("DB_PASSWORD", ""),
+        "HOST": environ.get("DB_HOST", "db"),
+        "PORT": environ.get("DB_PORT", "5432"),
+        "OPTIONS": {
+            "pool": environ.get("DB_POOL", "True").lower() == "true",
+        },
+    },
 }
 
 
@@ -105,6 +117,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
+LANGUAGES = ["en"]
+
 TIME_ZONE = "UTC"
 
 USE_I18N = True
@@ -121,3 +135,11 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+
+VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536))
+OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
+OPENAI_API_BASE = environ.get("OPENAI_API_BASE")
+EMBEDDIG_MODEL_NAME = environ.get("EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
