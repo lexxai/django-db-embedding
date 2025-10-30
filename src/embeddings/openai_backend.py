@@ -15,3 +15,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
     def embed_text(self, text: str) -> list[float]:
         response = openai.Embedding.create(model=self.model, input=text)
         return response["data"][0]["embedding"]
+
+    async def aembed_text(self, text: str) -> list[float]:
+        response = await openai.Embedding.acreate(model=self.model, input=text)
+        return response["data"][0]["embedding"]

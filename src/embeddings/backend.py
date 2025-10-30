@@ -7,3 +7,8 @@ class EmbeddingBackend(ABC):
     def embed_text(self, text: str) -> list[float]:
         """Generate embedding vector from text."""
         ...
+
+    @abstractmethod
+    async def aembed_text(self, text: str) -> list[float]:
+        """Generate async embedding vector from text."""
+        ...

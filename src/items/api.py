@@ -8,6 +8,7 @@ from ninja.errors import ValidationError
 from ninja.security import django_auth
 from pgvector.django import CosineDistance
 
+from embeddings.service import embedding_service
 from items.embeddings import get_or_create_query_embedding
 from items.models import Item, ItemEmbedding
 from items.schemas import ItemSchema, SearchFilters
@@ -55,14 +56,12 @@ async def search(request, filters: Query[SearchFilters]):
 
     # Step 1: Generate or fetch cached query embedding
     try:
-        query_vector = await get_or_create_query_embedding(query)
+        query_vector = await embedding_service.aget_or_create_query_embedding(query)
 
         # Step 2: Run async ORM query
         # Optional hybrid FTS:
         # First, define the subquery for full-text search without awaiting it.
-        fts_qs = Item.objects.annotate(
-            search=SearchVector("title", "description")
-        ).filter(search=query)
+        fts_qs = Item.objects.annotate(search=SearchVector("title", "description")).filter(search=query)
 
         # Then, use the subquery in the main query to run a single DB query.
         embeddings = (

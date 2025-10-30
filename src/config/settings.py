@@ -161,7 +161,7 @@ if REDIS_URL:
         }
         SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
         print("Redis connection activated")
-    except Exception as e:
+    except Exception:
         print("Redis connection error")
 
 
