@@ -1,12 +1,13 @@
-# Use an official Python runtime as a parent image
-FROM python:3.14-slim
+ARG PYTHON_VER=3.14
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+FROM python:${PYTHON_VER}-slim
+
+
 
 # Install uv
-RUN pip install uv
+# RUN pip install uv
+# Use an official image to get the uv binary
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Set work directory
 WORKDIR /app
@@ -16,5 +17,11 @@ COPY "pyproject.toml" "uv.lock" .
 RUN uv sync --locked
 
 # Copy project
-COPY ./src ./src
+COPY --chmod=+x ./dockers/entrypoint.sh .
+COPY ./src/db_embedding/ .
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/app/.venv/bin/:$PATH
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 

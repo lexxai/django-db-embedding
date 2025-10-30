@@ -1,7 +1,8 @@
 name: db-embedding
 services:
   db:
-    image: postgres:${DB_VERSION:-18}
+#    image: postgres:${DB_VERSION:-18}
+    image: pgvector/pgvector:pg${DB_VERSION:-18}
     environment:
       - POSTGRES_DB=${DB_NAME:-postgres}
       - POSTGRES_USER=${DB_USER:-postgres}
@@ -18,7 +19,7 @@ services:
       context: .
 
     volumes:
-      - ./src:/app/src
+      - ./src/db_embedding:/app/src
     ports:
       - "8000:8000"
     depends_on:
@@ -31,11 +32,11 @@ services:
   celery:
     build:
       context: .
-    command: celery -A config worker -l info --pool=solo
+    command: celery -A config worker -l info --pool=solo --concurrency=1 --chdir ./src
     env_file:
       - .env
     volumes:
-      - ./src:/app/src
+      - ./src/db_embedding:/app/src
     depends_on:
       - db
       - redis
