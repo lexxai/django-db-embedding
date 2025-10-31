@@ -3,14 +3,14 @@ from asgiref.sync import sync_to_async
 from django.contrib.postgres.search import SearchVector
 from django.db import IntegrityError
 from django.shortcuts import aget_object_or_404, aget_list_or_404
-from ninja import Router, Query
+from ninja import Router, Query, Schema
 from ninja.errors import ValidationError
 from ninja.security import django_auth
 from pgvector.django import CosineDistance
 
 from embeddings.service import embedding_service
 from items.models import Item, ItemEmbedding
-from items.schemas import ItemSchema, SearchFilters
+from items.schemas import ItemSchema, SearchFilters, SearchResultSchema
 
 
 async def django_aauth(request):
@@ -45,10 +45,11 @@ async def call_external(request):
     return {"status": r.status_code}
 
 
-@router.get("/search", response=list[ItemSchema])
+@router.get("/search", response=list[SearchResultSchema])
 async def search(request, filters: Query[SearchFilters]):
     query = filters.q
     top_k = filters.top_k
+    use_fts = False
 
     if not query:
         raise ValidationError([{"error": "Query parameter 'q' is required"}])
@@ -60,16 +61,27 @@ async def search(request, filters: Query[SearchFilters]):
         # Step 2: Run async ORM query
         # Optional hybrid FTS:
         # First, define the subquery for full-text search without awaiting it.
-        fts_qs = Item.objects.annotate(search=SearchVector("title", "description")).filter(search=query)
+        if use_fts:
+            fts_qs = Item.objects.annotate(search=SearchVector("title", "description")).filter(search=query)
+            base_qs = ItemEmbedding.objects.filter(item__in=fts_qs)
+        else:
+            base_qs = ItemEmbedding.objects
 
-        # Then, use the subquery in the main query to run a single DB query.
-        # By using an async list comprehension, we build the final list of items directly.
-        items = [
-            emb.item
-            async for emb in ItemEmbedding.objects.filter(item__in=fts_qs)
-            .annotate(similarity=CosineDistance("vector", query_vector))
-            .order_by("similarity")
+        # Annotate with similarity and fetch results
+        results_qs = (
+            base_qs.annotate(distance=CosineDistance("vector", query_vector))
+            .order_by("distance")
             .select_related("item")[:top_k]
+        )
+
+        # Construct the response payload with item data and similarity score
+        # Ninja expects a flat dictionary that matches the SearchResultSchema.
+        items = [
+            {
+                **emb.item.__dict__,  # Unpack the item's fields
+                "distance": emb.distance,
+            }
+            async for emb in results_qs
         ]
         return items
     except Exception as e:
