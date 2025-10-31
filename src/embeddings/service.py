@@ -1,9 +1,14 @@
 # embeddings/service.py
+import logging
+
+from django.conf import settings
 
 from items.models import QueryEmbedding
 from items.utils import hash_query, ahash_query
 from .backend import EmbeddingBackend
 from .openai_backend import OpenAIEmbeddingBackend
+
+logger = logging.getLogger(__file__)
 
 
 class EmbeddingService:
@@ -15,7 +20,10 @@ class EmbeddingService:
         obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
         if created:
             obj.vector = self.backend.embed_text(query_text)
-            obj.save()
+            if obj.vector and len(obj.vector) == settings.VECTOR_EMBEDDIG_DIMENSIONS:
+                obj.save()
+            else:
+                logger.error(f"Invalid vector length: '{obj.vector}'")
         return obj.vector
 
     async def aget_or_create_query_embedding(self, query_text: str):
@@ -23,12 +31,21 @@ class EmbeddingService:
         obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
         if created:
             obj.vector = await self.backend.aembed_text(query_text)
-            await obj.asave()
+            if obj.vector and len(obj.vector) == settings.VECTOR_EMBEDDIG_DIMENSIONS:
+                await obj.asave()
+            else:
+                logger.error(f"Invalid vector length: '{obj.vector}'")
         return obj.vector
 
 
 # --------------------------
 # Module-level instance (used throughout project)
 # --------------------------
-backend = OpenAIEmbeddingBackend()
-embedding_service = EmbeddingService(backend)
+try:
+    backend = OpenAIEmbeddingBackend()
+    embedding_service = EmbeddingService(backend)
+except Exception as e:
+    backend = None
+    embedding_service = None
+    logger.error(f"Failed to initialize embedding service: {e}")
+#

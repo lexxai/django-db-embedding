@@ -63,15 +63,14 @@ async def search(request, filters: Query[SearchFilters]):
         fts_qs = Item.objects.annotate(search=SearchVector("title", "description")).filter(search=query)
 
         # Then, use the subquery in the main query to run a single DB query.
-        embeddings = (
-            await ItemEmbedding.objects.filter(item__in=fts_qs)
+        # By using an async list comprehension, we build the final list of items directly.
+        items = [
+            emb.item
+            async for emb in ItemEmbedding.objects.filter(item__in=fts_qs)
             .annotate(similarity=CosineDistance("vector", query_vector))
             .order_by("similarity")
-            .aselect_related("item")[:top_k]
-        )
-
-        # Step 3: Serialize results
-        items = [emb.item for emb in embeddings]
+            .select_related("item")[:top_k]
+        ]
         return items
-    except IntegrityError as e:
+    except Exception as e:
         raise ValidationError([{"error": str(e).split("\n")[0]}])

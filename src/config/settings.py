@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "items",
+    "embeddings",
 ]
 
 MIDDLEWARE = [
@@ -172,3 +173,63 @@ VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536)
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
 OPENAI_API_BASE = environ.get("OPENAI_API_BASE")
 EMBEDDIG_MODEL_NAME = environ.get("EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
+OPENAI_API_FREE_TIER = (environ.get("OPENAI_API_FREE_TIER", "True").lower() == "true",)
+OPENAI_API_DELAY_TIME_RPM = int(environ.get("OPENAI_API_DELAY_TIME_RPM", 95))  # RPM
+
+
+# Logging settings
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": environ.get("DJANGO_LOG_LEVEL", default="DEBUG" if DEBUG else "INFO"),
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "console_debug": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": environ.get("DJANGO_LOG_LEVEL", default="INFO"),
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": environ.get("DJANGO_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": environ.get("DJANGO_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+        "django.template": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+LOGGING_APPS = set(("items", "embeddings"))
+for app in LOGGING_APPS:
+    LOGGING["loggers"][app] = {
+        "handlers": ["console_debug"],
+        "level": "DEBUG" if DEBUG else "WARNING",
+        "propagate": False,
+    }
