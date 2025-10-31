@@ -18,7 +18,7 @@ class ItemEmbedding(models.Model):
     vector = VectorField(
         dimensions=settings.VECTOR_EMBEDDIG_DIMENSIONS, null=True, blank=True
     )  # OpenAI embedding vector size: 1536
-    model = models.CharField(max_length=50, default=settings.EMBEDDIG_MODEL_NAME)
+    model = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

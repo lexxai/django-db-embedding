@@ -29,8 +29,8 @@ class EmbeddingService:
         return obj.vector
 
     async def aget_or_create_query_embedding(self, query_text: str):
-        query_text = self.backend.model_name + query_text
-        query_h = await ahash_query(query_text)
+        query_text_hash = self.backend.model_name + query_text
+        query_h = await ahash_query(query_text_hash)
         obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
         if created:
             obj.vector = await self.backend.aembed_text(query_text)
