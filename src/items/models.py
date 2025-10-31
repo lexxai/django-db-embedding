@@ -25,5 +25,5 @@ class ItemEmbedding(models.Model):
 
 class QueryEmbedding(models.Model):
     query_hash = models.CharField(max_length=64, unique=True)  # SHA256
-    vector = VectorField(dimensions=1536)
+    vector = VectorField(dimensions=settings.VECTOR_EMBEDDIG_DIMENSIONS, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
