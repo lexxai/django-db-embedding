@@ -31,7 +31,7 @@ class ORJSONRenderer(BaseRenderer):
         return json.dumps(data)
 
 
-api = NinjaAPI(parser=ORJSONParser(), renderer=ORJSONRenderer())
+api = NinjaAPI(title="DataBase EMBEDDING", parser=ORJSONParser(), renderer=ORJSONRenderer())
 
 api.add_router("/items/", "items.api.router", tags=["items"])
 
@@ -40,9 +40,7 @@ api.add_router("/items/", "items.api.router", tags=["items"])
 def db_error_handler(request, exc):
     error_str = "Database is currently unavailable. Please try again later."
     logger.error(f"{error_str} Error: {exc}")
-    return api.create_response(
-        request, {"detail": error_str}, status=HTTPStatus.SERVICE_UNAVAILABLE
-    )
+    return api.create_response(request, {"detail": error_str}, status=HTTPStatus.SERVICE_UNAVAILABLE)
 
 
 @api.get("/liveness", url_name="liveness", tags=["service"])

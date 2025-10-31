@@ -13,7 +13,7 @@ repos:
     rev: v0.4.4
     hooks:
     -   id: ruff
-        args: [check]
+#        args: ["check"]
         types: [ python ]
         files: "^src/.*\\.py$"
 
