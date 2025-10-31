@@ -1,15 +1,19 @@
-import openai
 from django.conf import settings
 
-from .models import QueryEmbedding
-from .utils import ahash_query
+from embeddings.service import embedding_service
+from .models import Item, ItemEmbedding
 
 
-async def get_or_create_query_embedding(query_text: str):
-    query_h = await ahash_query(query_text)
-    obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
-    if created:
-        response = await openai.Embedding.acreate(model=settings.EMBEDDIG_MODEL_NAME, input=query_text)
-        obj.vector = response["data"][0]["embedding"]
-        await obj.asave()
-    return obj.vector
+async def create_item_embedding(item: "Item"):
+    """
+    Creates and saves an embedding for a given item.
+    If an embedding already exists for the item, it will be updated.
+    """
+    text = f"{item.title}\n{item.description}"
+    vector = await embedding_service.aget_or_create_query_embedding(text)
+
+    embedding, created = await ItemEmbedding.objects.aupdate_or_create(
+        item=item,
+        defaults={"vector": vector, "model": settings.EMBEDDIG_MODEL_NAME},
+    )
+    return embedding

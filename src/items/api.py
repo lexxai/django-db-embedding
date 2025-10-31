@@ -9,7 +9,6 @@ from ninja.security import django_auth
 from pgvector.django import CosineDistance
 
 from embeddings.service import embedding_service
-from items.embeddings import get_or_create_query_embedding
 from items.models import Item, ItemEmbedding
 from items.schemas import ItemSchema, SearchFilters
 

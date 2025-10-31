@@ -8,19 +8,19 @@ class Item(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     # Optional: full-text search vector
     search_vector = SearchVectorField(null=True, blank=True)
 
 
 class ItemEmbedding(models.Model):
-    item = models.OneToOneField(
-        Item, on_delete=models.CASCADE, related_name="embedding"
-    )
+    item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="embedding")
     vector = VectorField(
-        dimensions=settings.VECTOR_EMBEDDIG_DIMENSIONS
+        dimensions=settings.VECTOR_EMBEDDIG_DIMENSIONS, null=True, blank=True
     )  # OpenAI embedding vector size: 1536
     model = models.CharField(max_length=50, default=settings.EMBEDDIG_MODEL_NAME)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class QueryEmbedding(models.Model):
