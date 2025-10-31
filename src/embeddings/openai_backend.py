@@ -23,6 +23,10 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         self.free_tier: bool = settings.OPENAI_API_FREE_TIER
         self.free_tier_delay: float = 60 / (settings.OPENAI_API_DELAY_TIME_RPM or 1)
 
+    @property
+    def model_name(self) -> str:
+        return self.model or ""
+
     def embed_text(self, text: str) -> list[float]:
         response = async_to_sync(self.aembed_text)(text)
         return response
