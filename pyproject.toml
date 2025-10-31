@@ -13,6 +13,7 @@ dependencies = [
     "redis[hiredis]>=7.0.1",
     "celery>=5.5.3",
     "openai>=2.6.1",
+    "cohere>=5.20.0",
 ]
 
 [dependency-groups]
