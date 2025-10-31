@@ -12,7 +12,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY "pyproject.toml" "uv.lock" .
-RUN uv sync --locked --no-group dev
+RUN uv sync --locked --no-group dev  --all-groups
 
 FROM python:${PYTHON_VER}-slim
 

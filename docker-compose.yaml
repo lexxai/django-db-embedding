@@ -19,6 +19,9 @@ services:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
 
 
   backend:
@@ -52,3 +55,4 @@ services:
 volumes:
   postgres_data:
   staticfiles:
+  redis_data:

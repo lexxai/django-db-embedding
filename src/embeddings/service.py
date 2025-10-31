@@ -24,6 +24,8 @@ class EmbeddingService:
                 obj.save()
             else:
                 logger.error(f"Invalid vector length: '{obj.vector}'")
+                obj.delete()
+                return None
         return obj.vector
 
     async def aget_or_create_query_embedding(self, query_text: str):
@@ -35,6 +37,8 @@ class EmbeddingService:
                 await obj.asave()
             else:
                 logger.error(f"Invalid vector length: '{obj.vector}'")
+                await obj.adelete()
+                return None
         return obj.vector
 
 

@@ -92,8 +92,8 @@ DATABASES = {
         "PORT": environ.get("DB_PORT", "5432"),
         "OPTIONS": {
             "pool": environ.get("DB_POOL", "True").lower() == "true",
-            "options": "-c statement_timeout=5000",
-            "connect_timeout": 5,
+            # "options": "-c statement_timeout=5000",
+            # "connect_timeout": 5,
         },
     },
 }
