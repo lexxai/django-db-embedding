@@ -38,11 +38,10 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
                     "id", flat=True
                 )[: top_k * 2]
             ]
-            base_qs = base_qs.filter(item_id__in=fts_candidate_ids)
-
-            # Optimization: If FTS is the first stage and it returns no candidates, we can stop here.
-            if not fts_candidate_ids:
-                return []
+            # If FTS finds candidates, we use them to narrow the search space for the vector search.
+            # If not, we proceed with an unfiltered `base_qs` to allow for a full semantic search.
+            if fts_candidate_ids:
+                base_qs = base_qs.filter(item_id__in=fts_candidate_ids)
 
         # Step 2: Handle the case where embedding search is disabled
         if not use_embedding:
@@ -54,7 +53,7 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
             else:
                 # Use afilter for async compatibility and slice after filtering
                 items_iterator = Item.objects.afilter(
-                    Q(title__icontains=query) | Q(description__icontains=query)
+                    Q(title__icontains=query.lower()) | Q(description__icontains=query.lower())
                 ).order_by("id")[:top_k]
 
             items: list[dict[str, ...]] = [
