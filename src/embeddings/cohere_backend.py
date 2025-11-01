@@ -38,9 +38,9 @@ class CohereEmbeddingBackend(EmbeddingBackend):
             await sleep(self.api_delay_time_seconds)
 
     async def aembed_text(self, text: str, input_type: str = None) -> list[float] | None:
-        logger.debug(f"aembed_text text: {text}")
-        await self.delay_rpm()
         input_type = input_type or "search_query"
+        logger.debug(f"aembed_text:{input_type=}, {text[:20]=} ")
+        await self.delay_rpm()
         try:
             # query_input = [{"content": [{"type": "text", "text": text}]}]
             response = await self.client.embed(
