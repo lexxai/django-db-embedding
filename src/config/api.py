@@ -43,6 +43,13 @@ def db_error_handler(request, exc):
     return api.create_response(request, {"detail": error_str}, status=HTTPStatus.SERVICE_UNAVAILABLE)
 
 
+@api.exception_handler(Exception)
+def bad_request_error_handler(request, exc):
+    error_str = str(exc).split("\n")[0]
+    logger.error(f"{error_str} Error: {exc}")
+    return api.create_response(request, {"detail": error_str}, status=HTTPStatus.BAD_REQUEST)
+
+
 @api.get("/liveness", url_name="liveness", tags=["service"])
 async def liveness(request):
     return "OK"

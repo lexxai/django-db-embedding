@@ -146,6 +146,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 REDIS_URL = environ.get("REDIS_URL")
 
 if REDIS_URL:

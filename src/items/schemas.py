@@ -23,5 +23,13 @@ class SearchFilters(Schema):
     top_k: int = Field(5, ge=1, le=10)
 
 
+class HybridSearchFilters(SearchFilters):
+    alpha: float = Field(0.5, ge=0, le=1)
+
+
 class SearchResultSchema(ItemSchema):
     distance: float
+
+
+class HybridSearchResultSchema(ItemSchema):
+    hybrid_score: float

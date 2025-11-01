@@ -40,16 +40,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("All items are already embedded with the current model."))
             return
 
-        free_tier: bool = settings.API_DELAY_TIME_ENABLED
-        if free_tier:
-            free_tier_delay: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
+        api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
+        if api_delay_time_enabled:
+            api_delay_time_seconds: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
             for i, item_id in enumerate(item_ids):
                 self.stdout.write(f"({i + 1}/{count}) Queuing embedding for item_id={item_id}")
                 generate_item_embedding.delay(item_id)
                 self.stdout.write(
-                    f"Rate limit: sleeping for {free_tier_delay:.2f}s ({settings.API_DELAY_TIME_RPM} RPM)"
+                    f"Rate limit: sleeping for {api_delay_time_seconds:.2f}s ({settings.API_DELAY_TIME_RPM} RPM)"
                 )
-                await asyncio.sleep(free_tier_delay)
+                await asyncio.sleep(api_delay_time_seconds)
         else:
             # For non-free tiers, queue all tasks at once.
             for item_id in item_ids:

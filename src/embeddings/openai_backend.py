@@ -35,10 +35,10 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
     async def delay_rpm(self):
         if self.api_delay_time_enabled:
             logger.debug(
-                f"Sleep for free_tier delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
             )
             print(
-                f"delay_rpm Sleep for free_tier delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+                f"delay_rpm Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
             )
             await sleep(self.api_delay_time_seconds)
 

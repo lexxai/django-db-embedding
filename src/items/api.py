@@ -5,8 +5,8 @@ from ninja.errors import ValidationError
 from ninja.security import django_auth
 
 from items.models import Item
-from items.repository import engine_search
-from items.schemas import ItemSchema, SearchFilters, SearchResultSchema
+from items.repository import engine_search, engine_hybrid_search
+from items.schemas import ItemSchema, SearchFilters, SearchResultSchema, HybridSearchFilters, HybridSearchResultSchema
 
 
 async def adjango_auth(request):
@@ -34,3 +34,8 @@ async def search(request, filters: Query[SearchFilters]):
         return await engine_search(**filters.dict())
     except Exception as e:
         raise ValidationError([{"error": str(e).split("\n")[0]}])
+
+
+@router.get("/hybrid-search", response=list[HybridSearchResultSchema])
+async def hybrid_search_unified(request, filters: Query[HybridSearchFilters]):
+    return await engine_hybrid_search(**filters.dict())
