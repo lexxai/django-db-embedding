@@ -1,9 +1,10 @@
 from django.conf import settings
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db import transaction
+
 from .models import Item
-from .tasks import generate_item_embedding, update_item_vector_search
+from .tasks import generate_item_embedding
 
 
 @receiver(post_save, sender=Item)
@@ -25,8 +26,9 @@ def item_post_save_receiver(sender, instance, created, update_fields, **kwargs):
     def enqueue_tasks():
         if settings.VECTOR_EMBEDDIG_ENABLED:
             generate_item_embedding.delay(instance.id)
-        if settings.FULLTEXT_SEARCH_ENABLED:
-            update_item_vector_search.delay(instance.id)
+        # Moved to DataBase TRIGGER
+        # if settings.FULLTEXT_SEARCH_ENABLED:
+        #     update_item_vector_search.delay(instance.id)
 
     # Enqueue tasks only after the database transaction has been successfully committed.
     transaction.on_commit(enqueue_tasks)
