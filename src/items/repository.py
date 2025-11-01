@@ -70,7 +70,7 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
             logger.error("Embedding service not initialized")
             return []
 
-        query_vector = await embedding_service.aget_or_create_query_embedding(query)
+        query_vector = await embedding_service.aget_or_create_query_embedding(query, "search_query")
         if query_vector is None:
             return []
 
@@ -103,7 +103,7 @@ async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> 
             logger.error("Embedding service not initialized")
             return []
 
-        query_vector = await embedding_service.aget_or_create_query_embedding(query)
+        query_vector = await embedding_service.aget_or_create_query_embedding(query, "search_query")
         if query_vector is None:
             return []
 
