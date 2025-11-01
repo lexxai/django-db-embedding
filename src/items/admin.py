@@ -42,7 +42,7 @@ class ItemEmbeddingAdmin(admin.ModelAdmin):
     @admin.display(description="Vector Summary")
     def vector_display(self, obj):
         """Creates a more readable summary for the vector field."""
-        if hasattr(obj, "vector") and len(obj.vector) > 0:
+        if hasattr(obj, "vector") and obj.vector is not None and len(obj.vector) > 0:
             return f"Dimensions: {len(obj.vector)} | Preview: [{', '.join(map(str, obj.vector[:3]))}...]"
         return None
 
@@ -63,6 +63,6 @@ class QueryEmbeddingAdmin(admin.ModelAdmin):
     @admin.display(description="Vector Summary")
     def vector_display(self, obj):
         """Creates a more readable summary for the vector field."""
-        if hasattr(obj, "vector") and len(obj.vector) > 0:
+        if hasattr(obj, "vector") and obj.vector is not None and len(obj.vector) > 0:
             return f"Dimensions: {len(obj.vector)} | Preview: [{', '.join(map(str, obj.vector[:3]))}...]"
         return None

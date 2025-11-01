@@ -3,10 +3,11 @@ import logging
 
 from django.conf import settings
 
+
 from items.models import QueryEmbedding
 from items.utils import hash_query, ahash_query
 from .backend import EmbeddingBackend
-from .openai_backend import OpenAIEmbeddingBackend
+
 
 logger = logging.getLogger(__file__)
 
@@ -47,7 +48,20 @@ class EmbeddingService:
 # Module-level instance (used throughout project)
 # --------------------------
 try:
-    backend = OpenAIEmbeddingBackend()
+    backend = None
+    backend_name = settings.EMBEDDING_BACKEND
+    match backend_name:
+        case "openai":
+            from .openai_backend import OpenAIEmbeddingBackend
+
+            backend = OpenAIEmbeddingBackend()
+        case "cohere":
+            from .cohere_backend import CohereEmbeddingBackend
+
+            backend = CohereEmbeddingBackend()
+
+    if not backend:
+        raise Exception("Invalid backend name")
     embedding_service = EmbeddingService(backend)
 except Exception as e:
     backend = None

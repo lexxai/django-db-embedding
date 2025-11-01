@@ -1,8 +1,8 @@
 import logging
-import asyncio
 from functools import reduce
 from operator import add
 
+from asgiref.sync import async_to_sync
 from celery import shared_task
 from django.conf import settings
 from django.contrib.postgres.search import SearchVector
@@ -24,7 +24,7 @@ async def _generate_item_embedding_async(item_id: int):
         text = f"{item.title} {item.description}"
         print(f"_generate_item_embedding_async text: {text}")
         vector = await embedding_service.aget_or_create_query_embedding(text)
-        if not vector or len(vector) != settings.VECTOR_EMBEDDIG_DIMENSIONS:
+        if vector is None or len(vector) != settings.VECTOR_EMBEDDIG_DIMENSIONS:
             raise ValidationError(f"Invalid vector length from embedding service. {item.title=}")
 
         await ItemEmbedding.objects.aupdate_or_create(
@@ -44,7 +44,7 @@ def generate_item_embedding(self, item_id: int):
     """
     try:
         # Use asyncio.run() to execute the async function in a sync context.
-        asyncio.run(_generate_item_embedding_async(item_id))
+        async_to_sync(_generate_item_embedding_async)(item_id)
     except ValidationError as e:
         # Catch non-retriable errors here. Log and do not re-raise.
         # This marks the task as FAILED but prevents Celery from retrying it.
