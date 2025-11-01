@@ -4,15 +4,20 @@ name: db-embedding
 services:
   db:
 #    image: postgres:${DB_VERSION:-18}
-    image: pgvector/pgvector:pg${DB_VERSION:-18}
+#    image: pgvector/pgvector:pg${DB_VERSION:-18}
+    build:
+      context: ./dockers
+      dockerfile: db.Dockerfile
     ports:
       - "5432:5432"
     environment:
+      - DB_VERSION=${DB_VERSION:-18}
       - POSTGRES_DB=${DB_NAME:-postgres}
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - PGDATA=/var/lib/postgresql/${DB_VERSION:-18}/docker
     volumes:
+#      - ./dockers/ukrainian_fts.sql:/docker-entrypoint-initdb.d/ukrainian_fts.sql:ro
       - postgres_data:/var/lib/postgresql
 
   redis:

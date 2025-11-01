@@ -161,15 +161,14 @@ if REDIS_URL:
             }
         }
         SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-        print("Redis connection activated")
     except Exception:
         print("Redis connection error")
 
-
+USE_HNSW_INDEX = True
 CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 FULLTEXT_SEARCH_ENABLED = environ.get("FULLTEXT_SEARCH_ENABLED", "True").lower() == "true"
-FULLTEXT_SEARCH_LANGUAGES = environ.get("FULLTEXT_SEARCH_LANGUAGES", "english").split(",")
+FULLTEXT_SEARCH_LANGUAGES = environ.get("FULLTEXT_SEARCH_LANGUAGES", "english,ukrainian").split(",")
 VECTOR_EMBEDDIG_ENABLED = environ.get("VECTOR_EMBEDDIG_ENABLED", "True").lower() == "true"
 VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
