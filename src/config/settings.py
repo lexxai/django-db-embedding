@@ -181,6 +181,10 @@ COHERE_EMBEDDIG_MODEL_NAME = environ.get("COHERE_EMBEDDIG_MODEL_NAME", "embed-v4
 API_DELAY_TIME_ENABLED = (environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true",)
 API_DELAY_TIME_RPM = int(environ.get("API_DELAY_TIME_RPM", 95))  # RPM
 
+EMBEDDING_BACKEND_CLASSES = {
+    "openai": "embeddings.openai_backend.OpenAIEmbeddingBackend",
+    "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
+}
 EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "cohere")
 
 
