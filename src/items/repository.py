@@ -17,6 +17,7 @@ async def engine_search(query, top_k) -> list[dict[str, ...]]:
     use_fts = settings.FULLTEXT_SEARCH_ENABLED
     use_embedding = settings.VECTOR_EMBEDDIG_ENABLED
     base_qs = ItemEmbedding.objects
+    query = query.strip().lower()
 
     try:
         # Step 1: Apply Full-Text Search (FTS) filter if enabled
