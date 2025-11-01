@@ -12,6 +12,9 @@ class Item(models.Model):
     # Optional: full-text search vector
     search_vector = SearchVectorField(null=True, blank=True)
 
+    def __str__(self):
+        return f"Item: {self.title}"
+
 
 class ItemEmbedding(models.Model):
     item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="embedding")
@@ -22,8 +25,14 @@ class ItemEmbedding(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Embedding for {self.item.title}"
+
 
 class QueryEmbedding(models.Model):
     query_hash = models.CharField(max_length=64, unique=True)  # SHA256
     vector = VectorField(dimensions=settings.VECTOR_EMBEDDIG_DIMENSIONS, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Query Embedding: {self.query_hash}"
