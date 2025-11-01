@@ -52,7 +52,7 @@ class Command(BaseCommand):
             return
 
         for item_id in item_ids:
-            generate_item_embedding.delay(item_id, "search_document")
+            generate_item_embedding.delay(item_id, embedding_service.backend.InputType.DOCUMENT)
         self.stdout.write(f"Queued {count} items for embedding.")
 
         self.stdout.write(self.style.SUCCESS("Finished embedding items."))
