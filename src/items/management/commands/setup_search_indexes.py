@@ -16,7 +16,21 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
-            self.stdout.write("🔧 Setting up hybrid search infrastructure...")
+            self.stdout.write("Setting up hybrid search infrastructure...")
+
+            # Dynamically build the tsvector expression from settings
+            languages = settings.FULLTEXT_SEARCH_LANGUAGES
+            trigger_expressions = []
+            update_expressions = []
+            for lang in languages:
+                lang = lang.strip()
+                trigger_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(NEW.title, '')), 'A')")
+                trigger_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(NEW.description, '')), 'B')")
+                update_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(title, '')), 'A')")
+                update_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(description, '')), 'B')")
+
+            trigger_sql_part = " || ".join(trigger_expressions)
+            update_sql_part = " || ".join(update_expressions)
 
             # 1. Create FTS trigger function (multilingual: English + Ukrainian)
             cursor.execute(
@@ -24,11 +38,7 @@ class Command(BaseCommand):
                 CREATE OR REPLACE FUNCTION {TSVECTOR_TABLE_NAME}_search_vector_trigger()
                 RETURNS trigger AS $$
                 BEGIN
-                    NEW.{TSVECTOR_COLUMN} :=
-                        setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
-                        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'B') ||
-                        setweight(to_tsvector('ukrainian', coalesce(NEW.title, '')), 'A') ||
-                        setweight(to_tsvector('ukrainian', coalesce(NEW.description, '')), 'B');
+                    NEW.{TSVECTOR_COLUMN} := {trigger_sql_part};
                     RETURN NEW;
                 END
                 $$ LANGUAGE plpgsql;
@@ -90,14 +100,10 @@ class Command(BaseCommand):
             cursor.execute(
                 f"""
                 UPDATE {TSVECTOR_TABLE_NAME}
-                SET {TSVECTOR_COLUMN} = 
-                    setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-                    setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
-                    setweight(to_tsvector('ukrainian', coalesce(title, '')), 'A') ||
-                    setweight(to_tsvector('ukrainian', coalesce(description, '')), 'B')
+                SET {TSVECTOR_COLUMN} = {update_sql_part}
                 WHERE {TSVECTOR_COLUMN} IS NULL;
             """
             )
             self.stdout.write(self.style.SUCCESS("Existing rows updated (if needed)"))
 
-        self.stdout.write(self.style.SUCCESS("🎉 Hybrid search infrastructure ready!"))
+        self.stdout.write(self.style.SUCCESS("Hybrid search infrastructure ready!"))
