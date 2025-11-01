@@ -1,7 +1,7 @@
 import asyncio
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db.models import Q
 
 from items.models import Item
@@ -33,14 +33,14 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("All items are already embedded with the current model."))
             return
 
-        free_tier: bool = settings.OPENAI_API_FREE_TIER
+        free_tier: bool = settings.API_DELAY_TIME_ENABLED
         if free_tier:
-            free_tier_delay: float = 60 / (settings.OPENAI_API_DELAY_TIME_RPM or 1)
+            free_tier_delay: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
             for i, item_id in enumerate(item_ids):
                 self.stdout.write(f"({i + 1}/{count}) Queuing embedding for item_id={item_id}")
                 generate_item_embedding.delay(item_id)
                 self.stdout.write(
-                    f"Rate limit: sleeping for {free_tier_delay:.2f}s ({settings.OPENAI_API_DELAY_TIME_RPM} RPM)"
+                    f"Rate limit: sleeping for {free_tier_delay:.2f}s ({settings.API_DELAY_TIME_RPM} RPM)"
                 )
                 await asyncio.sleep(free_tier_delay)
         else:

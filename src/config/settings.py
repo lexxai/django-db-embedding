@@ -175,8 +175,8 @@ VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536)
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
 OPENAI_API_BASE = environ.get("OPENAI_API_BASE")
 EMBEDDIG_MODEL_NAME = environ.get("EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
-OPENAI_API_FREE_TIER = (environ.get("OPENAI_API_FREE_TIER", "True").lower() == "true",)
-OPENAI_API_DELAY_TIME_RPM = int(environ.get("OPENAI_API_DELAY_TIME_RPM", 95))  # RPM
+API_DELAY_TIME_ENABLED = (environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true",)
+API_DELAY_TIME_RPM = int(environ.get("API_DELAY_TIME_RPM", 95))  # RPM
 
 
 # Logging settings

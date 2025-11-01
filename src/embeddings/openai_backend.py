@@ -21,8 +21,8 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         if api_base:
             params["api_base"] = api_base or settings.OPENAI_API_BASE
         self.client = AsyncOpenAI(**params)
-        self.free_tier: bool = settings.OPENAI_API_FREE_TIER
-        self.free_tier_delay: float = 60 / (settings.OPENAI_API_DELAY_TIME_RPM or 1)
+        self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
+        self.api_delay_time_seconds: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
 
     @property
     def model_name(self) -> str:
@@ -33,16 +33,16 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         return response
 
     async def delay_rpm(self):
-        if self.free_tier:
+        if self.api_delay_time_enabled:
             logger.debug(
-                f"Sleep for free_tier delay: {self.free_tier_delay:.2} sec. ({settings.OPENAI_API_DELAY_TIME_RPM} RPM)"
+                f"Sleep for free_tier delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
             )
             print(
-                f"delay_rpm Sleep for free_tier delay: {self.free_tier_delay:.2} sec. ({settings.OPENAI_API_DELAY_TIME_RPM} RPM)"
+                f"delay_rpm Sleep for free_tier delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
             )
-            await sleep(self.free_tier_delay)
+            await sleep(self.api_delay_time_seconds)
 
-    async def aembed_text(self, text: str) -> list[float]:
+    async def aembed_text(self, text: str) -> list[float] | None:
         logger.debug(f"aembed_text text: {text}")
         await self.delay_rpm()
         try:
@@ -53,7 +53,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
 
             result = response.data[0].embedding
             if not result or len(result) != self.dimensions:
-                logger.error(f"Invalid vector length")
+                logger.error("Invalid vector length")
             # logger.debug(f"aembed_text result: {result}")
             return result
         except Exception as e:
