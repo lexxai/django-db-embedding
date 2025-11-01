@@ -1,18 +1,56 @@
+import logging
 from abc import ABC, abstractmethod
+from asyncio import sleep as asleep
+from enum import StrEnum
+from time import sleep
+
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingBackend(ABC):
 
+    class InputType(StrEnum):
+        DOCUMENT = "search_document"
+        QUERY = "search_query"
+
+    def __init__(self, model: str = None, dimensions: int = None):
+        self.model = model
+        self.dimensions = dimensions or settings.VECTOR_EMBEDDIG_DIMENSIONS
+        self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
+        self.api_delay_time_rpm = settings.API_DELAY_TIME_RPM
+        self.api_delay_time_seconds: float = 60 / (self.api_delay_time_rpm or 1)
+
     @abstractmethod
-    def embed_text(self, text: str, input_type: str = None) -> list[float]:
+    def embed_text(self, text: str, input_type: InputType = None) -> list[float]:
         """Generate embedding vector from text."""
         ...
 
     @abstractmethod
-    async def aembed_text(self, text: str, input_type: str = None) -> list[float]:
+    async def aembed_text(self, text: str, input_type: InputType = None) -> list[float]:
         """Generate async embedding vector from text."""
         ...
 
-    @property
     @abstractmethod
-    def model_name(self) -> str: ...
+    async def aembed_texts(self, texts: list[str], input_type: InputType = None) -> list[list[float]]:
+        """Generate async embedding vectors from a list of texts."""
+        ...
+
+    @property
+    def model_name(self) -> str:
+        return self.model or ""
+
+    async def adelay_rpm(self):
+        if self.api_delay_time_enabled:
+            logger.debug(
+                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+            )
+            await asleep(self.api_delay_time_seconds)
+
+    def delay_rpm(self):
+        if self.api_delay_time_enabled:
+            logger.debug(
+                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+            )
+            sleep(self.api_delay_time_seconds)
