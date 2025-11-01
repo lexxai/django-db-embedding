@@ -69,7 +69,7 @@ async def engine_search(query, top_k) -> list[dict[str, ...]]:
         if query_vector is None:
             return []
 
-        model_name = embedding_service.backend.model_name or settings.EMBEDDIG_MODEL_NAME
+        model_name = embedding_service.backend.model_name
         results_qs = (
             base_qs.annotate(distance=CosineDistance("vector", query_vector))
             .filter(model=model_name)

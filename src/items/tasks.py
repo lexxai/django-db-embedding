@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 
 async def _generate_item_embedding_async(item_id: int):
     try:
+        if not embedding_service:
+            logger.error("Embedding service not initialized")
+            return
+        model_name = embedding_service.backend.model_name
         item = await Item.objects.aget(id=item_id)
         text = f"{item.title} {item.description}"
         print(f"_generate_item_embedding_async text: {text}")
@@ -25,7 +29,7 @@ async def _generate_item_embedding_async(item_id: int):
 
         await ItemEmbedding.objects.aupdate_or_create(
             item=item,
-            defaults={"vector": vector, "model": settings.EMBEDDIG_MODEL_NAME},
+            defaults={"vector": vector, "model": model_name},
         )
         logger.info(f"Successfully generated embedding for item_id={item_id}")
     except Item.DoesNotExist:

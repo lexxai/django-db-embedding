@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
+from embeddings.service import embedding_service
 from items.models import Item
 from items.tasks import generate_item_embedding
 
@@ -17,10 +18,16 @@ class Command(BaseCommand):
     async def a_handle(self, *args, **options):
         self.stdout.write("Starting to embed items...")
 
+        if not embedding_service:
+            self.stdout.write(self.style.ERROR("Embedding service not initialized"))
+            return None
+
+        model_name = embedding_service.backend.model_name
+
         # Use ~Q for "not equal" instead of the non-existent `__ne` lookup.
         # Also, prefetch the IDs to avoid iterating over a large queryset.
         items_to_embed_qs = (
-            Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=settings.EMBEDDIG_MODEL_NAME))
+            Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
             .order_by("id")
             .values_list("id", flat=True)
         )

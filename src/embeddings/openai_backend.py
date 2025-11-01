@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAIEmbeddingBackend(EmbeddingBackend):
     def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
-        self.model = model or settings.EMBEDDIG_MODEL_NAME
+        self.model = model or settings.OPENAI_EMBEDDIG_MODEL_NAME
         self.dimensions = dimensions or settings.VECTOR_EMBEDDIG_DIMENSIONS
         params = {}
         if api_key:
