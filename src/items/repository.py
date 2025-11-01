@@ -123,11 +123,13 @@ async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> 
                 # So, `1 - distance` gives a similarity score from 0 to 2.
                 vec_similarity=1 - CosineDistance("embedding__vector", query_vector),
             )
-            .filter(Q(search_vector=combined_search_query) & Q(embedding__model=model_name))
+            # We remove the FTS filter to allow purely semantic matches to be ranked.
+            .filter(embedding__model=model_name)
             # Use a second annotate with F() objects instead of the legacy .extra()
             # Now we combine two similarity scores, where bigger is always better.
-            .annotate(hybrid_score=(F("fts_rank") * alpha) + (F("vec_similarity") * (1 - alpha)))
-            .order_by("-hybrid_score")[:top_k]
+            .annotate(hybrid_score=(F("fts_rank") * alpha) + (F("vec_similarity") * (1 - alpha))).order_by(
+                "-hybrid_score"
+            )[:top_k]
         )
 
         items: list[dict[str, ...]] = [
