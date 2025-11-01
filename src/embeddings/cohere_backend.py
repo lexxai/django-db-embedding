@@ -2,7 +2,8 @@ import logging
 from asyncio import sleep
 
 from asgiref.sync import async_to_sync
-from cohere import AsyncClient
+
+from cohere import AsyncClientV2
 from django.conf import settings
 
 from .backend import EmbeddingBackend
@@ -17,7 +18,7 @@ class CohereEmbeddingBackend(EmbeddingBackend):
         params = {}
         if api_key:
             params["api_key"] = api_key or settings.COHERE_API_KEY
-        self.client = AsyncClient(**params)
+        self.client = AsyncClientV2(**params)
         self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
         self.api_delay_time_seconds: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
 
@@ -25,7 +26,7 @@ class CohereEmbeddingBackend(EmbeddingBackend):
     def model_name(self) -> str:
         return self.model or ""
 
-    def embed_text(self, text: str, input_type: str = "search_query") -> list[float]:
+    def embed_text(self, text: str, input_type: str = None) -> list[float]:
         response = async_to_sync(self.aembed_text)(text, input_type)
         return response
 
@@ -36,16 +37,18 @@ class CohereEmbeddingBackend(EmbeddingBackend):
             )
             await sleep(self.api_delay_time_seconds)
 
-    async def aembed_text(self, text: str, input_type: str = "search_query") -> list[float] | None:
+    async def aembed_text(self, text: str, input_type: str = None) -> list[float] | None:
         logger.debug(f"aembed_text text: {text}")
         await self.delay_rpm()
+        input_type = input_type or "search_query"
         try:
+            # query_input = [{"content": [{"type": "text", "text": text}]}]
             response = await self.client.embed(
                 model=self.model,
                 texts=[text],
                 input_type=input_type,
                 embedding_types=["float"],
-                # output_dimension=self.dimensions,
+                output_dimension=self.dimensions,
             )
             if not response or not getattr(response, "embeddings", None):
                 logger.error(f"Invalid response: '{response}'")

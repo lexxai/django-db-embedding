@@ -1,6 +1,5 @@
 import asyncio
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
@@ -40,20 +39,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("All items are already embedded with the current model."))
             return
 
-        api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
-        if api_delay_time_enabled:
-            api_delay_time_seconds: float = 60 / (settings.API_DELAY_TIME_RPM or 1)
-            for i, item_id in enumerate(item_ids):
-                self.stdout.write(f"({i + 1}/{count}) Queuing embedding for item_id={item_id}")
-                generate_item_embedding.delay(item_id)
-                self.stdout.write(
-                    f"Rate limit: sleeping for {api_delay_time_seconds:.2f}s ({settings.API_DELAY_TIME_RPM} RPM)"
-                )
-                await asyncio.sleep(api_delay_time_seconds)
-        else:
-            # For non-free tiers, queue all tasks at once.
-            for item_id in item_ids:
-                generate_item_embedding.delay(item_id)
-            self.stdout.write(f"Queued {count} items for embedding.")
+        for item_id in item_ids:
+            generate_item_embedding.delay(item_id, "search_document")
+        self.stdout.write(f"Queued {count} items for embedding.")
 
         self.stdout.write(self.style.SUCCESS("Finished embedding items."))

@@ -25,7 +25,7 @@ def item_post_save_receiver(sender, instance, created, update_fields, **kwargs):
 
     def enqueue_tasks():
         if settings.VECTOR_EMBEDDIG_ENABLED:
-            generate_item_embedding.delay(instance.id)
+            generate_item_embedding.delay(instance.id, "search_document")
         # Moved to DataBase TRIGGER
         # if settings.FULLTEXT_SEARCH_ENABLED:
         #     update_item_vector_search.delay(instance.id)

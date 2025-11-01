@@ -14,7 +14,7 @@ from .models import Item, ItemEmbedding
 logger = logging.getLogger(__name__)
 
 
-async def _generate_item_embedding_async(item_id: int):
+async def _generate_item_embedding_async(item_id: int, input_type: str = None):
     try:
         if not embedding_service:
             logger.error("Embedding service not initialized")
@@ -22,8 +22,8 @@ async def _generate_item_embedding_async(item_id: int):
         model_name = embedding_service.backend.model_name
         item = await Item.objects.aget(id=item_id)
         text = f"{item.title} {item.description}"
-        print(f"_generate_item_embedding_async text: {text}")
-        vector = await embedding_service.aget_or_create_query_embedding(text)
+        # print(f"_generate_item_embedding_async text: {text}")
+        vector = await embedding_service.aget_or_create_query_embedding(text, input_type)
         if vector is None or len(vector) != settings.VECTOR_EMBEDDIG_DIMENSIONS:
             raise ValidationError(f"Invalid vector length from embedding service. {item.title=}")
 
@@ -38,13 +38,13 @@ async def _generate_item_embedding_async(item_id: int):
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 3})
-def generate_item_embedding(self, item_id: int):
+def generate_item_embedding(self, item_id: int, input_type: str = None):
     """
     Synchronous Celery task wrapper for the async embedding generation logic.
     """
     try:
         # Use asyncio.run() to execute the async function in a sync context.
-        async_to_sync(_generate_item_embedding_async)(item_id)
+        async_to_sync(_generate_item_embedding_async)(item_id, input_type)
     except ValidationError as e:
         # Catch non-retriable errors here. Log and do not re-raise.
         # This marks the task as FAILED but prevents Celery from retrying it.
