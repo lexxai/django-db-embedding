@@ -9,6 +9,7 @@ VECTOR_COLUMN = "vector"
 TSVECTOR_TABLE_NAME = Item._meta.db_table
 TSVECTOR_COLUMN = "search_vector"
 DIMENSION = settings.VECTOR_EMBEDDIG_DIMENSIONS
+LANGUAGES = settings.FULLTEXT_SEARCH_LANGUAGES
 
 
 class Command(BaseCommand):
@@ -19,10 +20,10 @@ class Command(BaseCommand):
             self.stdout.write("Setting up hybrid search infrastructure...")
 
             # Dynamically build the tsvector expression from settings
-            languages = settings.FULLTEXT_SEARCH_LANGUAGES
+
             trigger_expressions = []
             update_expressions = []
-            for lang in languages:
+            for lang in LANGUAGES:
                 lang = lang.strip()
                 trigger_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(NEW.title, '')), 'A')")
                 trigger_expressions.append(f"setweight(to_tsvector('{lang}', coalesce(NEW.description, '')), 'B')")
