@@ -46,6 +46,11 @@ class EmbeddingBackend(ABC):
             return ""
         return f"{self.name}:{self.model}" or ""
 
+    def get_prompt_name(self, input_type: InputType | None) -> str | None:
+        if input_type is None:
+            return None
+        return str(input_type)
+
     async def adelay_rpm(self):
         if self.api_delay_time_enabled:
             logger.debug(
