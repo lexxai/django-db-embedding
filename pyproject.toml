@@ -12,6 +12,7 @@ dependencies = [
     "django-ninja>=1.4.5",
     "redis[hiredis]>=7.0.1",
     "celery>=5.5.3",
+    "celery-types>=0.23.0",
     "openai>=2.6.1",
     "cohere>=5.20.0",
 ]
@@ -27,7 +28,8 @@ deploy = [
     "whitenoise[brotli]>=6.11.0",
 ]
 ml = [
-  "torch",
+  "sentence-transformers>=5.1.2",
+  "torch>=2.9.0",
 ]
 
 
