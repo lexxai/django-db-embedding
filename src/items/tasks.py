@@ -27,7 +27,7 @@ async def _generate_item_embedding_async(item_id: int, input_type: embedding_ser
         text = f"{item.title} {item.description}"
         # print(f"_generate_item_embedding_async text: {text}")
         vector = await embedding_service.aget_or_create_query_embedding(text, input_type)
-        if vector is None or len(vector) != settings.VECTOR_EMBEDDIG_DIMENSIONS:
+        if vector is None or len(vector) > settings.VECTOR_EMBEDDIG_DIMENSIONS:
             raise ValidationError(f"Invalid vector length from embedding service. {item.title=}")
 
         await ItemEmbedding.objects.aupdate_or_create(

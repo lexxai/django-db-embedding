@@ -31,7 +31,7 @@ class EmbeddingService:
         obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
         if created:
             obj.vector = self.backend.embed_text(query_text)
-            if obj.vector is not None and len(obj.vector) == self.backend.dimensions:
+            if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
                 obj.save(update_fields=["vector"])
                 obj.refresh_from_db(fields=["vector"])
             else:
@@ -51,7 +51,7 @@ class EmbeddingService:
         obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
         if created:
             obj.vector = await self.backend.aembed_text(query_text, input_type)
-            if obj.vector is not None and len(obj.vector) == self.backend.dimensions:
+            if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
                 await obj.asave(update_fields=["vector"])
                 await obj.arefresh_from_db(fields=["vector"])
             else:
