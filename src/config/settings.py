@@ -186,6 +186,7 @@ EMBEDDING_BACKEND_CLASSES = {
     "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
 }
 EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "cohere")
+EMBEDDING_BATCH_SIZE = 100
 
 
 # Logging settings

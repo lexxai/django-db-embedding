@@ -3,7 +3,7 @@ import logging
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from items.models import QueryEmbedding, Item, ItemEmbedding
+from items.models import QueryEmbedding
 from items.utils import hash_query, ahash_query
 from .backend import EmbeddingBackend
 
@@ -46,25 +46,6 @@ class EmbeddingService:
                 await obj.adelete()
                 return None
         return obj.vector
-
-    async def create_item_embeddings_in_batch(self, items: list[Item]):
-        texts = [f"{item.title}\n{item.description}" for item in items]
-        vectors = await self.backend.aembed_texts(texts, EmbeddingBackend.InputType.DOCUMENT)
-
-        if not vectors or len(vectors) != len(items):
-            logger.error("Failed to generate embeddings for all items.")
-            return
-
-        item_embeddings = [
-            ItemEmbedding(
-                item=item,
-                vector=vector,
-                model=self.backend.model_name,
-            )
-            for item, vector in zip(items, vectors)
-        ]
-
-        await ItemEmbedding.objects.abulk_create(item_embeddings)
 
 
 # --------------------------
