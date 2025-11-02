@@ -207,6 +207,7 @@ EMBEDDING_BACKEND_CLASSES = {
     "huggingface": "embeddings.huggingface_backend.HuggingFaceEmbeddingBackend",
 }
 
+EMBEDDING_BACKEND_PRELOAD = environ.get("EMBEDDING_BACKEND_PRELOAD", "False").lower() == "true"
 EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "huggingface")
 EMBEDDING_BATCH_SIZE = 100
 EMBEDDING_SERVICE_CACHE_TIME: int | None = 7 * 24 * 60 * 60  # 7 days, of None for disable

@@ -1,11 +1,11 @@
+import gc
 import logging
+from asyncio import sleep
 from enum import StrEnum
 from pathlib import Path
 
-import torch  # noqa: F401
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from sentence_transformers import SentenceTransformer
 
 from embeddings.backend import EmbeddingBackend
 
@@ -26,6 +26,9 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
         self._client = None
 
     def get_client(self):
+        import torch  # noqa: F401
+        from sentence_transformers import SentenceTransformer
+
         cache_dir: Path = settings.EMBEDDING_MODELS_CACHE_DIR
         cache_dir.mkdir(exist_ok=True, parents=True)
         client = SentenceTransformer(self.model, cache_folder=str(cache_dir))
@@ -41,23 +44,36 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
 
         return client
 
-    def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
-        logger.debug(f"embed_text: text[:20]={text[:20]}")
-        try:
-            embedding = self.client.encode(text, convert_to_tensor=False, prompt_name=self.get_prompt_name(input_type))
-            if embedding is None:
-                logger.error("Invalid embedding")
-                return None
-            result = embedding.tolist()
-            if not result or (len(result) > self.dimensions):
-                logger.error("Invalid vector length")
-            return result
-        except Exception as e:
-            logger.exception(f"Embedding generation failed: {e}")
-            return None
+    async def aclose(self):
+        self.close()
+        await sleep(0)
 
-    def embed_texts(self, texts: list[str], input_type: EmbeddingBackend.InputType = None) -> list[list[float]] | None:
-        logger.debug(f"embed_texts: texts count: {len(texts)}")
+    def close(self):
+        """Releases the SentenceTransformer model from memory."""
+        if self._client:
+            logger.debug("Releasing HuggingFace SentenceTransformer model from memory.")
+            try:
+                # Check if the model is on a CUDA device before trying to empty the cache
+                if any(p.is_cuda for p in self._client.parameters()):
+                    torch.cuda.empty_cache()  # noqa: F821
+            except Exception:
+                ...
+            self._client = None
+            gc.collect()
+
+    def embed_text(
+        self, text: str | list[str], input_type: EmbeddingBackend.InputType = None
+    ) -> list[float] | list[list[float]] | None:
+        return self.embed_texts(text, input_type=input_type)
+
+    def embed_texts(
+        self, texts: str | list[str], input_type: EmbeddingBackend.InputType = None
+    ) -> list[float] | list[list[float]] | None:
+        if isinstance(texts, list):
+            logger.debug(f"embed_texts: texts count: {len(texts)}")
+        else:
+            logger.debug(f"embed_texts: text: {texts[:20]}")
+
         try:
             embeddings = self.client.encode(
                 texts, convert_to_tensor=False, prompt_name=self.get_prompt_name(input_type)
@@ -65,13 +81,12 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
             if embeddings is None:
                 logger.error("Invalid embeddings")
                 return None
+
             result = embeddings.tolist()
-            if not result or (len(result) != len(texts)):
-                logger.error("Invalid result length")
+            if not result:
+                logger.error("Invalid result")
                 return None
-            for embedding in result:
-                if not embedding or len(embedding) > self.dimensions:
-                    logger.error("Invalid vector length")
+
             return result
         except Exception as e:
             logger.exception(f"Embedding generation failed: {e}")

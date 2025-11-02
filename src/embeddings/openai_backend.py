@@ -2,7 +2,6 @@ import logging
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
-from openai import AsyncOpenAI
 
 from embeddings.backend import EmbeddingBackend
 
@@ -15,16 +14,20 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
     def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
         model = model or settings.OPENAI_EMBEDDIG_MODEL_NAME
         super().__init__(model, dimensions)
+        assert self.model, "OPENAI_EMBEDDIG_MODEL_NAME must be set"
         self.api_key = api_key
         self.api_base = api_base
 
     def get_client(self):
+        from openai import AsyncOpenAI
+
         params = {}
         if self.api_key:
             params["api_key"] = self.api_key or settings.COHERE_API_KEY
         if self.api_base:
             params["base_url"] = self.api_base or settings.COHERE_API_BASE
         client = AsyncOpenAI(**params)
+        assert client, "Failed to initialize OpenAI client"
         return client
 
     def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:

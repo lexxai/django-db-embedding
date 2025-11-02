@@ -1,3 +1,4 @@
+import gc
 import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep as asleep
@@ -18,13 +19,15 @@ class EmbeddingBackend(ABC):
         DOCUMENT = "search_document"
         QUERY = "search_query"
 
-    def __init__(self, model: str = None, dimensions: int = None):
+    def __init__(self, model: str = None, dimensions: int = None, preload: bool = False):
         self._client = None
         self.model = model
         self.dimensions = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
         self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
         self.api_delay_time_rpm = settings.API_DELAY_TIME_RPM
         self.api_delay_time_seconds: float = 60 / (self.api_delay_time_rpm or 1)
+        if preload or settings.EMBEDDING_BACKEND_PRELOAD:
+            self.get_client()
 
     @abstractmethod
     def get_client(self): ...
@@ -34,6 +37,20 @@ class EmbeddingBackend(ABC):
         if self._client is None:
             self._client = self.get_client()
         return self._client
+
+    def close(self):
+        if self._client:
+            if hasattr(self._client, "close"):
+                self._client.close()
+            self._client = None
+            gc.collect()
+
+    async def aclose(self):
+        if self._client:
+            if hasattr(self._client, "aclose"):
+                await self._client.aclose()
+            self._client = None
+            gc.collect()
 
     @abstractmethod
     def embed_text(self, text: str, input_type: InputType = None) -> list[float]:

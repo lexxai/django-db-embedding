@@ -1,27 +1,3 @@
-# import os
-# import sys
-#
-# import dotenv
-# from django.conf import settings
-# from django.test import TestCase
-# from django.test.utils import get_runner
-
-
-# class ItemsTestCase(TestCase):
-#     def setUp(self):
-#         dotenv.load_dotenv()
-#         from embeddings.service import embedding_service
-#
-#         self.embedding_service = embedding_service
-#
-#     def test_get_or_create_query_embedding(self):
-#         """
-#         Tests that a query embedding can be created.
-#         """
-#         embedding = self.embedding_service.get_or_create_query_embedding("Test")
-#         self.assertIsNotNone(embedding)
-
-
 if __name__ == "__main__":
     import os
 
@@ -31,14 +7,33 @@ if __name__ == "__main__":
 
     django.setup()
 
+    import time
     from embeddings.service import embedding_service
 
-    # embedding = embedding_service.get_or_create_query_embedding("Test")
-    embedding = embedding_service.backend.embed_text("Test")
-    print(embedding)
+    def test_instance(name: str | list[str] = "Test", batch: bool = False):
+        print(name)
+        start_time = time.time()
+        embedding = embedding_service.backend.embed_texts(name) if batch else embedding_service.backend.embed_text(name)
+        end_time = time.time()
+        if isinstance(embedding, list):
+            if isinstance(embedding[0], list):
+                for emb in embedding:
+                    print("Length:", len(emb))
+                    print(emb[:4])
+            else:
+                print("Length:", len(embedding))
+                print(embedding[:4])
+        print(f"Time taken to embed: {(end_time - start_time):.4} seconds")
 
-    # TestRunner = get_runner(settings)
-    # test_runner = TestRunner()
-    # # Running tests for the 'items' app.
-    # failures = test_runner.run_tests(["items"])
-    # sys.exit(bool(failures))
+    test_instance("Test init")
+    test_instance("Test second")
+    print("\n embedding_service.backend.close()")
+    embedding_service.backend.close()
+    test_instance("Test reinitialize")
+
+    test_instance(["Test list 1", "Test list 2", "Test list 3"])
+    print("\nBatch mode")
+    test_instance(["Test list 4", "Test list 5", "Test list 6"], batch=True)
+
+    print("\nSleep for 30 seconds")
+    time.sleep(30)
