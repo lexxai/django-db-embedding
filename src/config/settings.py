@@ -187,6 +187,7 @@ EMBEDDING_BACKEND_CLASSES = {
 }
 EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "cohere")
 EMBEDDING_BATCH_SIZE = 100
+EMBEDDING_SERVICE_CACHE_TIME: int | None = 7 * 24 * 60 * 60  # 7 days, of None for disable
 
 
 # Logging settings
