@@ -26,6 +26,9 @@ deploy = [
     "uvicorn>=0.38.0",
     "whitenoise[brotli]>=6.11.0",
 ]
+ml = [
+  "torch",
+]
 
 
 [tool.black]
@@ -37,3 +40,22 @@ line_length = 120
 
 [tool.flake8]
 max-line-length = 120
+
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
+required-environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+    "sys_platform == 'darwin'",
+]
+
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple/"
+default = true
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cpu"
+
+
