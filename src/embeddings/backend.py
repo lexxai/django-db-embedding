@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingBackend(ABC):
+    """Abstract base class for embedding backends."""
+
+    name = "abstract"
 
     class InputType(StrEnum):
         DOCUMENT = "search_document"
@@ -39,7 +42,9 @@ class EmbeddingBackend(ABC):
 
     @property
     def model_name(self) -> str:
-        return self.model or ""
+        if not self.model:
+            return ""
+        return f"{self.name}:{self.model}" or ""
 
     async def adelay_rpm(self):
         if self.api_delay_time_enabled:

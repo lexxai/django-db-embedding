@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIEmbeddingBackend(EmbeddingBackend):
+    name = "openai"
+
     def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
         model = model or settings.OPENAI_EMBEDDIG_MODEL_NAME
         super().__init__(model, dimensions)
