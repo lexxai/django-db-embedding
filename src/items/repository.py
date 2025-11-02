@@ -14,13 +14,16 @@ from items.models import Item, ItemEmbedding
 logger = logging.getLogger(__name__)
 
 
-async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
+async def engine_search(query: str, top_k: float, threshold: float = 1.0) -> list[dict[str, ...]]:
+    query = query.strip().lower()
+    if not query or len(query) < 3:
+        return []
     use_fts = settings.FULLTEXT_SEARCH_ENABLED
     use_embedding = settings.VECTOR_EMBEDDIG_ENABLED
     base_qs = ItemEmbedding.objects
-    query = query.strip().lower()
 
     try:
+        fts_candidate_ids = None
         # Step 1: Apply Full-Text Search (FTS) filter if enabled
         if use_fts:
             # vectors = (
@@ -49,6 +52,8 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
             # If FTS was used, get the items from the ItemEmbedding query. Otherwise, do a simple icontains search.
             if use_fts:
                 # We use .select_related('item') to fetch the related item efficiently
+                if not fts_candidate_ids:
+                    return []
                 results_qs = base_qs.select_related("item")[:top_k]
                 items_iterator = (result.item async for result in results_qs)
             else:
@@ -81,6 +86,7 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
         results_qs = (
             base_qs.annotate(distance=CosineDistance("vector", query_vector))
             .filter(model=model_name)
+            .filter(distance__lte=threshold)
             .order_by("distance")
             .select_related("item")[:top_k]
         )
@@ -99,8 +105,12 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
         raise
 
 
-async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> list[dict[str, ...]]:
+async def engine_hybrid_search(
+    query: str, top_k: float, alpha: float = 0.5, threshold: float = 0.0
+) -> list[dict[str, ...]]:
     query = query.strip().lower()
+    if not query or len(query) < 3:
+        return []
     use_fts = settings.FULLTEXT_SEARCH_ENABLED
     use_embedding = settings.VECTOR_EMBEDDIG_ENABLED
     if not use_embedding or not use_fts:
@@ -138,8 +148,8 @@ async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> 
             # Use a second annotate with F() objects instead of the legacy .extra()
             # Now we combine two similarity scores, where bigger is always better.
             .annotate(hybrid_score=(F("fts_rank") * alpha) + (F("vec_similarity") * (1 - alpha)))
-            .order_by("-hybrid_score")
-            .filter(hybrid_score__gte=0)[:top_k]
+            .filter(hybrid_score__gt=threshold)
+            .order_by("-hybrid_score")[:top_k]
         )
 
         items: list[dict[str, ...]] = [
