@@ -22,8 +22,12 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
             params["api_base"] = api_base or settings.OPENAI_API_BASE
         self.client = AsyncOpenAI(**params)
 
-    def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float]:
+    def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         response = async_to_sync(self.aembed_text)(text)
+        return response
+
+    def embed_texts(self, texts: list[str], input_type: EmbeddingBackend.InputType = None) -> list[list[float]] | None:
+        response = async_to_sync(self.aembed_texts)(texts)
         return response
 
     async def aembed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:

@@ -19,11 +19,15 @@ class CohereEmbeddingBackend(EmbeddingBackend):
         if api_key:
             params["api_key"] = api_key or settings.COHERE_API_KEY
         if api_base:
-            params["base_url"] = api_base
+            params["base_url"] = api_base or settings.COHERE_API_BASE
         self.client = AsyncClientV2(**params)
 
-    def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float]:
+    def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         response = async_to_sync(self.aembed_text)(text, input_type)
+        return response
+
+    def embed_texts(self, texts: list[str], input_type: EmbeddingBackend.InputType = None) -> list[list[float]] | None:
+        response = async_to_sync(self.aembed_texts)(texts)
         return response
 
     async def aembed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
