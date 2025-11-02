@@ -101,6 +101,11 @@ async def engine_search(query: str, top_k: float) -> list[dict[str, ...]]:
 
 async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> list[dict[str, ...]]:
     query = query.strip().lower()
+    use_fts = settings.FULLTEXT_SEARCH_ENABLED
+    use_embedding = settings.VECTOR_EMBEDDIG_ENABLED
+    if not use_embedding or not use_fts:
+        return await engine_search(query, top_k)
+
     try:
         if not embedding_service:
             logger.error("Embedding service not initialized")
@@ -132,9 +137,9 @@ async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> 
             .filter(embedding__model=model_name)
             # Use a second annotate with F() objects instead of the legacy .extra()
             # Now we combine two similarity scores, where bigger is always better.
-            .annotate(hybrid_score=(F("fts_rank") * alpha) + (F("vec_similarity") * (1 - alpha))).order_by(
-                "-hybrid_score"
-            )[:top_k]
+            .annotate(hybrid_score=(F("fts_rank") * alpha) + (F("vec_similarity") * (1 - alpha)))
+            .order_by("-hybrid_score")
+            .filter(hybrid_score__gte=0)[:top_k]
         )
 
         items: list[dict[str, ...]] = [
