@@ -5,7 +5,7 @@ from django.db.models import Q
 
 from embeddings.service import embedding_service
 from items.models import Item
-from items.tasks import generate_item_embedding
+from items.tasks import generate_item_embedding, generate_item_embedding_in_batch
 
 
 class Command(BaseCommand):
@@ -60,20 +60,5 @@ class Command(BaseCommand):
     async def a_handle_batch(self, *args, **options):
         batch_size = options["batch_size"]
         self.stdout.write("Starting to embed items...")
-
-        model_name = embedding_service.backend.model_name
-
-        items_to_embed_qs = Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
-        total_count = await items_to_embed_qs.acount()
-        self.stdout.write(f"Found {total_count} items to embed.")
-
-        # Process in batches
-        for i in range(0, total_count, batch_size):
-            batch_items = await list(items_to_embed_qs[i : i + batch_size])
-            if not batch_items:
-                break
-
-            self.stdout.write(f"Processing batch of {len(batch_items)} items...")
-            await embedding_service.create_item_embeddings_in_batch(batch_items)
-
+        generate_item_embedding_in_batch.delay(batch_size, embedding_service.backend.InputType.DOCUMENT)
         self.stdout.write(self.style.SUCCESS("Finished embedding items."))

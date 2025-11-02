@@ -7,6 +7,7 @@ from django.contrib.postgres.search import SearchRank, SearchQuery
 from django.db.models import F, Q
 from pgvector.django import CosineDistance
 
+from embeddings.backend import EmbeddingBackend
 from embeddings.service import embedding_service
 from items.models import Item, ItemEmbedding
 
@@ -151,3 +152,36 @@ async def engine_hybrid_search(query: str, top_k: float, alpha: float = 0.5) -> 
     except Exception as e:
         logger.error(f"Error in hybrid_engine_search: {e}")
         raise
+
+
+async def acreate_item_embeddings_in_batch(batch_data: list[dict], input_type: EmbeddingBackend.InputType = None):
+    """
+    Generates and saves embeddings for a batch of item data.
+    `batch_data` is a list of dictionaries, each with 'id', 'title', 'description'.
+    """
+    if not embedding_service:
+        logger.error("Embedding backend not initialized.")
+        return
+
+    input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+
+    texts_to_embed = [f"{item['title']} {item['description']}" for item in batch_data]
+
+    # Assuming your backend has a method to embed a list of texts
+    vectors = await embedding_service.backend.aembed_texts(texts_to_embed, input_type=input_type)
+
+    if not vectors or len(vectors) != len(batch_data):
+        logger.error("Mismatch between number of items and generated vectors.")
+        return
+
+    # Create ItemEmbedding objects for bulk update/creation
+    embeddings_to_create = []
+    for i, item_data in enumerate(batch_data):
+        embeddings_to_create.append(
+            ItemEmbedding(item_id=item_data["id"], vector=vectors[i], model=embedding_service.backend.model_name)
+        )
+
+    # Use bulk_create for high efficiency
+    await ItemEmbedding.objects.abulk_create(
+        embeddings_to_create, update_conflicts=True, unique_fields=["item_id"], update_fields=["vector", "model"]
+    )
