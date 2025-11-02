@@ -297,6 +297,7 @@ dev = [
     { name = "ruff" },
 ]
 ml = [
+    { name = "hf-xet" },
     { name = "sentence-transformers" },
     { name = "torch", version = "2.9.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.9.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
@@ -305,7 +306,7 @@ ml = [
 [package.metadata]
 requires-dist = [
     { name = "celery", specifier = ">=5.5.3" },
-    { name = "celery-types", specifier = "==0.23.0" },
+    { name = "celery-types", specifier = ">=0.23.0" },
     { name = "cohere", specifier = ">=5.20.0" },
     { name = "django", specifier = ">=5.2.7" },
     { name = "django-ninja", specifier = ">=1.4.5" },
@@ -328,8 +329,9 @@ dev = [
     { name = "ruff", specifier = ">=0.14.2" },
 ]
 ml = [
+    { name = "hf-xet", specifier = ">=1.2.0" },
     { name = "sentence-transformers", specifier = ">=5.1.2" },
-    { name = "torch" },
+    { name = "torch", specifier = ">=2.9.0" },
 ]
 
 [[package]]

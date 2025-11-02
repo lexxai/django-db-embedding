@@ -10,6 +10,7 @@ from django.contrib.postgres.search import SearchVector
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
+from embeddings.backend import EmbeddingBackend
 from embeddings.service import embedding_service
 from .models import Item, ItemEmbedding
 from .repository import acreate_item_embeddings_in_batch
@@ -17,7 +18,7 @@ from .repository import acreate_item_embeddings_in_batch
 logger = logging.getLogger(__name__)
 
 
-async def _generate_item_embedding_async(item_id: int, input_type: embedding_service.backend.InputType = None):
+async def _generate_item_embedding_async(item_id: int, input_type: EmbeddingBackend.InputType = None):
     try:
         if not embedding_service:
             logger.error("Embedding service not initialized")
@@ -27,7 +28,7 @@ async def _generate_item_embedding_async(item_id: int, input_type: embedding_ser
         text = f"{item.title} {item.description}"
         # print(f"_generate_item_embedding_async text: {text}")
         vector = await embedding_service.aget_or_create_query_embedding(text, input_type)
-        if vector is None or len(vector) > settings.VECTOR_EMBEDDIG_DIMENSIONS:
+        if vector is None or len(vector) > settings.VECTOR_EMBEDDING_DIMENSIONS:
             raise ValidationError(f"Invalid vector length from embedding service. {item.title=}")
 
         await ItemEmbedding.objects.aupdate_or_create(
@@ -41,7 +42,7 @@ async def _generate_item_embedding_async(item_id: int, input_type: embedding_ser
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 3})
-def generate_item_embedding(self, item_id: int, input_type: embedding_service.backend.InputType = None):
+def generate_item_embedding(self, item_id: int, input_type: EmbeddingBackend.InputType = None):
     """
     Synchronous Celery task wrapper for the async embedding generation logic.
     """
@@ -79,15 +80,13 @@ def update_item_vector_search(self, item_id: int):
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 3})
-def generate_item_embedding_in_batch(
-    self, batch_size: int = None, input_type: embedding_service.backend.InputType = None
-):
+def generate_item_embedding_in_batch(self, batch_size: int = None, input_type: EmbeddingBackend.InputType = None):
     # Use a default batch size from settings if not provided to prevent errors.
     final_batch_size = batch_size or settings.EMBEDDING_BATCH_SIZE or 100
     async_to_sync(agenerate_item_embedding_in_batch)(final_batch_size, input_type)
 
 
-async def agenerate_item_embedding_in_batch(batch_size: int, input_type: embedding_service.backend.InputType = None):
+async def agenerate_item_embedding_in_batch(batch_size: int, input_type: EmbeddingBackend.InputType = None):
     logger.debug("Starting to embed items...")
     if not embedding_service:
         logger.error("Embedding service not initialized")

@@ -1,12 +1,13 @@
 import logging
 from enum import StrEnum
+from pathlib import Path
 
 import torch  # noqa: F401
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from sentence_transformers import SentenceTransformer
 
-from .backend import EmbeddingBackend
+from embeddings.backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +19,27 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
         DOCUMENT = "document"
         QUERY = "query"
 
-    def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
+    def __init__(self, model: str = None, dimensions: int = None, **kwargs):
         model = model or settings.HUGGINGFACE_EMBEDDING_MODEL_NAME
         super().__init__(model, dimensions)
-        # Construct the cache directory path relative to the project root
-        self.cache_dir = settings.EMBEDDING_MODELS_CACHE_DIR
-        self.cache_dir.makedirs(self.cache_dir, exist_ok=True, parents=True)
+        assert self.model, "HUGGINGFACE_EMBEDDING_MODEL_NAME must be set"
+        self._client = None
 
-        self.client = SentenceTransformer(model, cache_folder=str(self.cache_dir))
-        if dimensions:
-            self.client.max_seq_length = dimensions
+    def get_client(self):
+        cache_dir: Path = settings.EMBEDDING_MODELS_CACHE_DIR
+        cache_dir.mkdir(exist_ok=True, parents=True)
+        client = SentenceTransformer(self.model, cache_folder=str(cache_dir))
+        # if self.dimensions:
+        #     client.max_seq_length = self.dimensions
+
+        # The first module is the tokenizer and model. If it's None, the model failed to load.
+        if not client or not client._first_module():
+            logger.error(f"Failed to load SentenceTransformer model: {self.model}")
+            raise ValueError(
+                f"Could not load SentenceTransformer model '{self.model}'. Please check the model name and configuration."
+            )
+
+        return client
 
     def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         logger.debug(f"embed_text: text[:20]={text[:20]}")

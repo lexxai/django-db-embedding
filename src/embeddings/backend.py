@@ -19,11 +19,21 @@ class EmbeddingBackend(ABC):
         QUERY = "search_query"
 
     def __init__(self, model: str = None, dimensions: int = None):
+        self._client = None
         self.model = model
-        self.dimensions = dimensions or settings.VECTOR_EMBEDDIG_DIMENSIONS
+        self.dimensions = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
         self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
         self.api_delay_time_rpm = settings.API_DELAY_TIME_RPM
         self.api_delay_time_seconds: float = 60 / (self.api_delay_time_rpm or 1)
+
+    @abstractmethod
+    def get_client(self): ...
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = self.get_client()
+        return self._client
 
     @abstractmethod
     def embed_text(self, text: str, input_type: InputType = None) -> list[float]:

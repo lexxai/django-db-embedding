@@ -36,6 +36,7 @@ services:
     volumes:
       - ./src:/app/src
       - staticfiles:/app/staticfiles
+      - models:/app/data/models
     ports:
       - "8000:8000"
     depends_on:
@@ -53,6 +54,7 @@ services:
     entrypoint: ./run_celery_worker.sh
     volumes:
       - ./src:/app/src
+      - models:/app/data/models
     depends_on:
       - db
       - redis
@@ -61,3 +63,4 @@ volumes:
   postgres_data:
   staticfiles:
   redis_data:
+  models:

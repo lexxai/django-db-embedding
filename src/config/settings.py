@@ -166,33 +166,58 @@ if REDIS_URL:
     except Exception:
         print("Redis connection error")
 
-USE_HNSW_INDEX = True
+
 CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
+
+USE_HNSW_INDEX = True
 FULLTEXT_SEARCH_ENABLED = environ.get("FULLTEXT_SEARCH_ENABLED", "True").lower() == "true"
 FULLTEXT_SEARCH_LANGUAGES = environ.get("FULLTEXT_SEARCH_LANGUAGES", "english,ukrainian").split(",")
 VECTOR_EMBEDDIG_ENABLED = environ.get("VECTOR_EMBEDDIG_ENABLED", "True").lower() == "true"
-VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("VECTOR_EMBEDDIG_DIMENSIONS", 1536))
+
+# Embedding models
+# OpenAI
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
 OPENAI_API_BASE = environ.get("OPENAI_API_BASE")
+OPENAI_EMBEDDIG_MODEL_NAME = environ.get("OPENAI_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
+OPENAI_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OPENAI_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
+
+# Cohere
 COHERE_API_KEY = environ.get("COHERE_API_KEY")
 COHERE_API_BASE = environ.get("COHERE_API_BASE")
-OPENAI_EMBEDDIG_MODEL_NAME = environ.get("OPENAI_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
 COHERE_EMBEDDIG_MODEL_NAME = environ.get("COHERE_EMBEDDIG_MODEL_NAME", "embed-v4.0")
+COHERE_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("COHERE_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
+
+# HuggingFace
 HUGGINGFACE_EMBEDDING_MODEL_NAME = environ.get("HUGGINGFACE_EMBEDDING_MODEL_NAME", "BAAI/bge-m3")
+HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS", 1024))
+
+
 API_DELAY_TIME_ENABLED = (environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true",)
 API_DELAY_TIME_RPM = int(environ.get("API_DELAY_TIME_RPM", 95))  # RPM
 
 EMBEDDING_BACKEND_CLASSES = {
     "openai": "embeddings.openai_backend.OpenAIEmbeddingBackend",
     "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
+    "huggingface": "embeddings.huggingface_backend.HuggingFaceEmbeddingBackend",
 }
-EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "cohere")
+
+EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "huggingface")
 EMBEDDING_BATCH_SIZE = 100
 EMBEDDING_SERVICE_CACHE_TIME: int | None = 7 * 24 * 60 * 60  # 7 days, of None for disable
 
 EMBEDDING_MODELS_CACHE_DIR = BASE_DIR.parent / environ.get("EMBEDDING_MODELS_CACHE_DIR", "data/models")
-
+VECTOR_EMBEDDING_DIMENSIONS = {
+    "openai": OPENAI_VECTOR_EMBEDDIG_DIMENSIONS,
+    "cohere": COHERE_VECTOR_EMBEDDIG_DIMENSIONS,
+    "huggingface": HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS,
+}.get(EMBEDDING_BACKEND)
+assert VECTOR_EMBEDDING_DIMENSIONS, "Invalid VECTOR_EMBEDDIG_DIMENSIONS, check EMBEDDING_BACKEND value"
 
 # Logging settings
 LOGGING = {

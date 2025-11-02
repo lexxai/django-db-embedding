@@ -4,7 +4,7 @@ from asgiref.sync import async_to_sync
 from cohere import AsyncClientV2
 from django.conf import settings
 
-from .backend import EmbeddingBackend
+from embeddings.backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,17 @@ class CohereEmbeddingBackend(EmbeddingBackend):
     def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
         model = model or settings.COHERE_EMBEDDIG_MODEL_NAME
         super().__init__(model, dimensions)
+        self.api_key = api_key
+        self.api_base = api_base
+
+    def get_client(self):
         params = {}
-        if api_key:
-            params["api_key"] = api_key or settings.COHERE_API_KEY
-        if api_base:
-            params["base_url"] = api_base or settings.COHERE_API_BASE
-        self.client = AsyncClientV2(**params)
+        if self.api_key:
+            params["api_key"] = self.api_key or settings.COHERE_API_KEY
+        if self.api_base:
+            params["base_url"] = self.api_base or settings.COHERE_API_BASE
+        client = AsyncClientV2(**params)
+        return client
 
     def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         response = async_to_sync(self.aembed_text)(text, input_type)
