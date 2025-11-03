@@ -7,8 +7,8 @@ from django.core.cache import cache
 from django.utils.module_loading import import_string
 
 from items.models import QueryEmbedding
-from items.utils import hash_query, ahash_query
-from .backend import EmbeddingBackend
+from items.utils import hash_query
+from embeddings.backend import EmbeddingBackend
 
 logger = logging.getLogger(__file__)
 
@@ -25,11 +25,14 @@ class EmbeddingService:
     def backend(self):
         return self._backend
 
+    def gen_hash_text(self, text: str, input_type: EmbeddingBackend.InputType = None):
+        query_text_hash = self.backend.model_name + (str(input_type) or "") + text
+        return hash_query(query_text_hash)
+
     def get_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
-        query_text_hash = self.backend.model_name + (input_type or "") + query_text
-        query_h = hash_query(query_text_hash)
+        query_h = self.gen_hash_text(query_text, input_type)
         if (vector := self.cache_get(query_h)) is not None:
             return vector
         obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
@@ -48,8 +51,7 @@ class EmbeddingService:
     async def aget_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
-        query_text_hash = self.backend.model_name + (input_type or "") + query_text
-        query_h = await ahash_query(query_text_hash)
+        query_h = self.gen_hash_text(query_text, input_type)
         if (vector := await self.acache_get(query_h)) is not None:
             return vector
         obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
@@ -64,6 +66,105 @@ class EmbeddingService:
                 return None
         await self.acache_set(query_h, obj.vector)
         return obj.vector
+
+    def get_or_create_documents_embedding(
+        self, texts: list[str], input_type: EmbeddingBackend.InputType = None
+    ) -> list[list[float]] | None:
+        """
+        Generates and saves embeddings for a batch of item data.
+        `batch_data` is a list of dictionaries, each with 'id', 'title', 'description'.
+        """
+        if not embedding_service:
+            logger.error("Embedding backend not initialized.")
+            return None
+
+        input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+
+        results: list[list[float] | None] = [None] * len(texts)
+        texts_to_embed: list[str] = []
+        texts_to_embed_id: list[int] = []
+        hashes: list[str] = []
+        for i, text in enumerate(texts):
+            query_h = self.gen_hash_text(text, input_type)
+            hashes.append(query_h)
+            if (vector := self.cache_get(query_h)) is not None:
+                results[i] = vector
+            else:
+                texts_to_embed.append(text)
+                texts_to_embed_id.append(i)
+
+        vectors = embedding_service.backend.embed_texts(texts_to_embed, input_type=input_type)
+
+        if vectors is None:
+            return results
+
+        for i, vector in enumerate(vectors):
+            results[texts_to_embed_id[i]] = vector
+
+            # Create ItemEmbedding objects for bulk update/creation
+        embeddings_to_create = []
+        import numpy as np
+
+        for i, hashes in enumerate(hashes):
+            vector = results[i]
+            embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
+            self.cache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
+
+        # Use bulk_create for high efficiency
+        QueryEmbedding.objects.bulk_create(
+            embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+        )
+
+        return results
+
+    async def aget_or_create_documents_embedding(
+        self, texts: list[str], input_type: EmbeddingBackend.InputType = None
+    ) -> list[list[float]] | None:
+        """
+        Generates and saves embeddings for a batch of item data.
+        """
+        if not embedding_service:
+            logger.error("Embedding backend not initialized.")
+            return None
+
+        input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+
+        results: list[list[float] | None] = [None] * len(texts)
+        texts_to_embed: list[str] = []
+        texts_to_embed_id: list[int] = []
+        hashes: list[str] = []
+        for i, text in enumerate(texts):
+            query_h = self.gen_hash_text(text, input_type)
+            hashes.append(query_h)
+            if (vector := await self.acache_get(query_h)) is not None:
+                results[i] = vector
+            else:
+                texts_to_embed.append(text)
+                texts_to_embed_id.append(i)
+
+        vectors = await embedding_service.backend.aembed_texts(texts_to_embed, input_type=input_type)
+
+        if vectors is None:
+            return results
+
+        for i, vector in enumerate(vectors):
+            results[texts_to_embed_id[i]] = vector
+
+            # Create ItemEmbedding objects for bulk update/creation
+        embeddings_to_create = []
+        import numpy as np
+
+        for i, hashes in enumerate(hashes):
+            vector = results[i]
+            embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
+            await self.acache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
+
+        # Use bulk_create for high efficiency
+        await QueryEmbedding.objects.abulk_create(
+            embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+        )
+
+        return results
 
     @staticmethod
     def generate_key(key):

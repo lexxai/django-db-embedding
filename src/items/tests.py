@@ -1,7 +1,10 @@
 import logging
 
+from asgiref.sync import async_to_sync
+
 if __name__ == "__main__":
     import os
+    import time
     import psutil
 
     # This allows the test to be run standalone.
@@ -13,7 +16,6 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-    import time
     from embeddings.service import embedding_service
 
     def get_memory_usage():
@@ -50,13 +52,45 @@ if __name__ == "__main__":
                 logger.info(f"{embedding[:4]}...")
         logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
 
-    test_instance("Test init")
-    test_instance("Test second")
-    logger.info("******** Embedding service closing now for free resources")
-    embedding_service.close()
-    test_instance("Test reinitialize")
-    logger.info("*** Batch mode")
-    test_instance(["Test list 1", "Test list 2", "Test list 3", "Test list 4", "Test list 5", "Test list 6"])
+    def test_batch_documents(test_documents: list[str] = None):
+        logger.info("-" * 60)
+        logger.info(f"*** Input texts: '{test_documents}'")
+        logger.info(f"*** Model name: '{embedding_service.backend.model_name}'")
+        mem_before = get_memory_usage()
+        logger.info(f"*** Memory before: {mem_before:.2f} MB")
+
+        start_time = time.time()
+        embedding = async_to_sync(embedding_service.aget_or_create_documents_embedding)(test_documents)
+        end_time = time.time()
+
+        mem_after = get_memory_usage()
+        logger.info(f"*** Memory after: {mem_after:.2f} MB")
+        logger.info(f"*** Memory used for operation: {(mem_after - mem_before):.2f} MB")
+
+        if isinstance(embedding, list):
+            if embedding and isinstance(embedding[0], list):
+                for i, emb in enumerate(embedding):
+                    logger.info(f"Length of vector [{i}]: {len(emb)}")
+                    logger.info(f"{emb[:4]}...")
+            elif embedding:
+                logger.info("Length of vector: %s", len(embedding))
+                logger.info(f"{embedding[:4]}...")
+        logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
+
+    def test_blok_1():
+        test_instance("Test init")
+        test_instance("Test second")
+        logger.info("******** Embedding service closing now for free resources")
+        embedding_service.close()
+        test_instance("Test reinitialize")
+        logger.info("*** Batch mode")
+        test_instance(["Test list 1", "Test list 2", "Test list 3", "Test list 4", "Test list 5", "Test list 6"])
+
+    def test_block_2():
+        test_documents = ["Test list 1", "Test list 2", "Test list 3", "Test list 4"]
+        test_batch_documents(test_documents)
+
+    test_block_2()
 
     logger.info("*** Sleep for 30 seconds")
     time.sleep(30)
