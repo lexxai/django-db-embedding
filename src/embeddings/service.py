@@ -1,4 +1,5 @@
 import logging
+import time
 from types import TracebackType
 from typing import TypeVar
 
@@ -6,11 +7,11 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils.module_loading import import_string
 
+from embeddings.backend import EmbeddingBackend
 from items.models import QueryEmbedding
 from items.utils import hash_query
-from embeddings.backend import EmbeddingBackend
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
@@ -32,8 +33,11 @@ class EmbeddingService:
     def get_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
+        start_time = time.time()
         query_h = self.gen_hash_text(query_text, input_type)
         if (vector := self.cache_get(query_h)) is not None:
+            duration = time.time() - start_time
+            logger.debug(f"*** Time for get embed from Redis cache: {duration:.4f} seconds")
             return vector
         obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
         if created:
@@ -46,13 +50,18 @@ class EmbeddingService:
                 obj.delete()
                 return None
         self.cache_set(query_h, obj.vector)
+        duration = time.time() - start_time
+        logger.debug(f"*** Time for get embed: {duration:.4f} seconds, SQL cache was {created=}")
         return obj.vector
 
     async def aget_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
+        start_time = time.time()
         query_h = self.gen_hash_text(query_text, input_type)
         if (vector := await self.acache_get(query_h)) is not None:
+            duration = time.time() - start_time
+            logger.debug(f"*** Time for get embed from Redis cache: {duration:.4f} seconds")
             return vector
         obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
         if created:
@@ -65,6 +74,8 @@ class EmbeddingService:
                 await obj.adelete()
                 return None
         await self.acache_set(query_h, obj.vector)
+        duration = time.time() - start_time
+        logger.debug(f"*** Time for get embed: {duration:.4f} seconds, SQL cache was {created=}")
         return obj.vector
 
     def get_or_create_documents_embedding(
