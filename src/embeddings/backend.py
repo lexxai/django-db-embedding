@@ -65,6 +65,11 @@ class EmbeddingBackend(ABC):
         ...
 
     @abstractmethod
+    def embed_texts(self, texts: list[str], input_type: InputType = None) -> list[list[float]]:
+        """Generate embedding vectors from a list of texts."""
+        ...
+
+    @abstractmethod
     async def aembed_text(self, text: str, input_type: InputType = None) -> list[float]:
         """Generate async embedding vector from text."""
         ...
