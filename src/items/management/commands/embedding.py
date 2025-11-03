@@ -5,7 +5,12 @@ from django.db.models import Q
 
 from embeddings.service import embedding_service
 from items.models import Item
-from items.tasks import generate_item_embedding, generate_item_embedding_in_batch
+from items.tasks import (
+    generate_item_embedding,
+    generate_item_embedding_in_batch,
+    _generate_item_embedding_async,
+    agenerate_item_embedding_in_batch,
+)
 
 
 class Command(BaseCommand):
@@ -15,8 +20,14 @@ class Command(BaseCommand):
         parser.add_argument(
             "--batch-size",
             type=int,
-            default=None,
-            help="Number of items to process in a single batch.",
+            default=100,
+            help="Number of items to process in a single batch., Default 100",
+        )
+        parser.add_argument(
+            "--use-queue",
+            action="store_true",
+            default=False,
+            help="Enable to use background queue for batch processing. Default: Disabled",
         )
 
     def handle(self, *args, **options):
@@ -27,7 +38,9 @@ class Command(BaseCommand):
             asyncio.run(self.a_handle_batch(*args, **options))
 
     async def a_handle(self, *args, **options):
-        self.stdout.write("Starting to embed items...")
+
+        use_queue = options["use_queue"]
+        self.stdout.write(f"Starting to embed items... {use_queue=}")
 
         if not embedding_service:
             self.stdout.write(self.style.ERROR("Embedding service not initialized"))
@@ -52,13 +65,21 @@ class Command(BaseCommand):
             return
 
         for item_id in item_ids:
-            generate_item_embedding.delay(item_id, embedding_service.backend.InputType.DOCUMENT)
+            if use_queue:
+                generate_item_embedding.delay(item_id, embedding_service.backend.InputType.DOCUMENT)
+            else:
+                await _generate_item_embedding_async(item_id, embedding_service.backend.InputType.DOCUMENT)
+
         self.stdout.write(f"Queued {count} items for embedding.")
 
         self.stdout.write(self.style.SUCCESS("Finished embedding items."))
 
     async def a_handle_batch(self, *args, **options):
         batch_size = options["batch_size"]
-        self.stdout.write("Starting to embed items...")
-        generate_item_embedding_in_batch.delay(batch_size, embedding_service.backend.InputType.DOCUMENT)
+        use_queue = options["use_queue"]
+        self.stdout.write(f"Starting to embed items... {use_queue=}")
+        if use_queue:
+            generate_item_embedding_in_batch.delay(batch_size, embedding_service.backend.InputType.DOCUMENT)
+        else:
+            await agenerate_item_embedding_in_batch(batch_size, embedding_service.backend.InputType.DOCUMENT)
         self.stdout.write(self.style.SUCCESS("Finished embedding items."))

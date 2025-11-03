@@ -183,7 +183,7 @@ async def acreate_item_embeddings_in_batch(batch_data: list[dict], input_type: E
     texts_to_embed = [f"{item['title']} {item['description']}" for item in batch_data]
 
     # Assuming your backend has a method to embed a list of texts
-    vectors = await embedding_service.backend.aget_or_create_documents_embedding(texts_to_embed, input_type=input_type)
+    vectors = await embedding_service.aget_or_create_documents_embedding(texts_to_embed, input_type=input_type)
 
     if not vectors or len(vectors) != len(batch_data):
         logger.error("Mismatch between number of items and generated vectors.")
