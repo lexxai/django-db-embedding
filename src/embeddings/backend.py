@@ -45,7 +45,10 @@ class EmbeddingBackend(ABC):
             close_method = getattr(self._client, "close", getattr(self._client, "aclose", None))
             if close_method:
                 if inspect.iscoroutinefunction(close_method):
-                    async_to_sync(close_method)()
+                    try:
+                        async_to_sync(close_method)()
+                    except Exception:
+                        ...
                 else:
                     # Run synchronous close in a thread to avoid blocking the event loop
                     close_method()
@@ -53,18 +56,8 @@ class EmbeddingBackend(ABC):
             gc.collect()
 
     async def aclose(self):
-        if self._client:
-            close_method = getattr(self._client, "aclose", getattr(self._client, "close", None))
-            if close_method:
-                if inspect.iscoroutinefunction(close_method):
-                    await close_method()
-                else:
-                    # Run synchronous close in a thread to avoid blocking the event loop
-                    await sync_to_async(close_method)()
-
-            self._client = None
-            # Run garbage collection in a thread as well, as it can be blocking
-            await sync_to_async(gc.collect)()
+        """Asynchronously close the backend by running the synchronous close method in a thread."""
+        await sync_to_async(self.close)()
 
     @abstractmethod
     def embed_text(self, text: str, input_type: InputType = None) -> list[float]:

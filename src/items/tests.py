@@ -51,10 +51,8 @@ if __name__ == "__main__":
         logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
 
     test_instance("Test init")
-    embedding_service.close()
-    exit()
     test_instance("Test second")
-    logger.info("*** Embedding_service.close()")
+    logger.info("******** Embedding service closing now for free resources")
     embedding_service.close()
     test_instance("Test reinitialize")
     logger.info("*** Batch mode")
