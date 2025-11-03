@@ -1,4 +1,6 @@
 import logging
+from types import TracebackType
+from typing import TypeVar
 
 from django.conf import settings
 from django.core.cache import cache
@@ -12,6 +14,8 @@ logger = logging.getLogger(__file__)
 
 
 class EmbeddingService:
+    _T = TypeVar("_T")
+
     def __init__(self, backend: EmbeddingBackend):
         self._backend = backend
         assert backend, "Backend must be initialized"
@@ -84,6 +88,36 @@ class EmbeddingService:
         if self.cache_time is None or not key:
             return None
         return cache.get(self.generate_key(key))
+
+    def close(self):
+        if self.backend:
+            self.backend.close()
+
+    async def aclose(self):
+        if self.backend:
+            await self.backend.aclose()
+
+    def __enter__(self: _T) -> _T:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    async def __aenter__(self: _T) -> _T:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self.aclose()
 
 
 # --------------------------

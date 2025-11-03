@@ -1,10 +1,12 @@
 import gc
+import inspect
 import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep as asleep
 from enum import StrEnum
 from time import sleep
 
+from asgiref.sync import sync_to_async, async_to_sync
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -40,17 +42,29 @@ class EmbeddingBackend(ABC):
 
     def close(self):
         if self._client:
-            if hasattr(self._client, "close"):
-                self._client.close()
+            close_method = getattr(self._client, "close", getattr(self._client, "aclose", None))
+            if close_method:
+                if inspect.iscoroutinefunction(close_method):
+                    async_to_sync(close_method)()
+                else:
+                    # Run synchronous close in a thread to avoid blocking the event loop
+                    close_method()
             self._client = None
             gc.collect()
 
     async def aclose(self):
         if self._client:
-            if hasattr(self._client, "aclose"):
-                await self._client.aclose()
+            close_method = getattr(self._client, "aclose", getattr(self._client, "close", None))
+            if close_method:
+                if inspect.iscoroutinefunction(close_method):
+                    await close_method()
+                else:
+                    # Run synchronous close in a thread to avoid blocking the event loop
+                    await sync_to_async(close_method)()
+
             self._client = None
-            gc.collect()
+            # Run garbage collection in a thread as well, as it can be blocking
+            await sync_to_async(gc.collect)()
 
     @abstractmethod
     def embed_text(self, text: str, input_type: InputType = None) -> list[float]:

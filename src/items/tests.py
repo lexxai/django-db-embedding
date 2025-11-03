@@ -1,3 +1,5 @@
+import logging
+
 if __name__ == "__main__":
     import os
     import psutil
@@ -8,6 +10,9 @@ if __name__ == "__main__":
 
     django.setup()
 
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
     import time
     from embeddings.service import embedding_service
 
@@ -16,38 +21,44 @@ if __name__ == "__main__":
         process = psutil.Process(os.getpid())
         return process.memory_info().rss / (1024 * 1024)
 
-    def test_instance(name: str | list[str] = "Test", batch: bool = False):
-        print(name)
+    def test_instance(name: str | list[str] = "Test"):
+        logger.info("-" * 60)
+        logger.info(f"*** Input text: '{name}'")
+        logger.info(f"*** Model name: '{embedding_service.backend.model_name}'")
         mem_before = get_memory_usage()
-        print(f"Memory before: {mem_before:.2f} MB")
+        logger.info(f"*** Memory before: {mem_before:.2f} MB")
 
         start_time = time.time()
-        embedding = embedding_service.backend.embed_texts(name) if batch else embedding_service.backend.embed_text(name)
+        embedding = (
+            embedding_service.backend.embed_texts(name)
+            if isinstance(name, list)
+            else embedding_service.backend.embed_text(name)
+        )
         end_time = time.time()
 
         mem_after = get_memory_usage()
-        print(f"Memory after: {mem_after:.2f} MB")
-        print(f"Memory used for operation: {(mem_after - mem_before):.2f} MB")
+        logger.info(f"*** Memory after: {mem_after:.2f} MB")
+        logger.info(f"*** Memory used for operation: {(mem_after - mem_before):.2f} MB")
 
         if isinstance(embedding, list):
             if embedding and isinstance(embedding[0], list):
-                for emb in embedding:
-                    print("Length:", len(emb))
-                    print(emb[:4])
+                for i, emb in enumerate(embedding):
+                    logger.info(f"Length of vector [{i}]: {len(emb)}")
+                    logger.info(f"{emb[:4]}...")
             elif embedding:
-                print("Length:", len(embedding))
-                print(embedding[:4])
-        print(f"Time taken to embed: {(end_time - start_time):.4f} seconds")
+                logger.info("Length of vector: %s", len(embedding))
+                logger.info(f"{embedding[:4]}...")
+        logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
 
     test_instance("Test init")
+    embedding_service.close()
+    exit()
     test_instance("Test second")
-    print("\n embedding_service.backend.close()")
-    embedding_service.backend.close()
+    logger.info("*** Embedding_service.close()")
+    embedding_service.close()
     test_instance("Test reinitialize")
+    logger.info("*** Batch mode")
+    test_instance(["Test list 1", "Test list 2", "Test list 3", "Test list 4", "Test list 5", "Test list 6"])
 
-    test_instance(["Test list 1", "Test list 2", "Test list 3"])
-    print("\nBatch mode")
-    test_instance(["Test list 4", "Test list 5", "Test list 6"], batch=True)
-
-    print("\nSleep for 30 seconds")
+    logger.info("*** Sleep for 30 seconds")
     time.sleep(30)
