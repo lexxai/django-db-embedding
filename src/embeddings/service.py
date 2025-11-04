@@ -21,6 +21,8 @@ class EmbeddingService:
         self._backend = backend
         assert backend, "Backend must be initialized"
         self.cache_time = settings.EMBEDDING_SERVICE_CACHE_TIME
+        self.use_redis_cache = True
+        self.use_sql_cache = True
 
     @property
     def backend(self):
@@ -118,13 +120,16 @@ class EmbeddingService:
 
         for i, hashes in enumerate(hashes):
             vector = results[i]
-            embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
-            self.cache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
+            if self.use_sql_cache:
+                embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
+            if self.use_redis_cache:
+                self.cache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
 
-        # Use bulk_create for high efficiency
-        QueryEmbedding.objects.bulk_create(
-            embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
-        )
+        if self.use_sql_cache:
+            # Use bulk_create for high efficiency
+            QueryEmbedding.objects.bulk_create(
+                embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+            )
 
         return results
 
@@ -147,7 +152,7 @@ class EmbeddingService:
         for i, text in enumerate(texts):
             query_h = self.gen_hash_text(text, input_type)
             hashes.append(query_h)
-            if (vector := await self.acache_get(query_h)) is not None:
+            if self.use_redis_cache and ((vector := await self.acache_get(query_h)) is not None):
                 results[i] = vector
             else:
                 texts_to_embed.append(text)
@@ -167,13 +172,16 @@ class EmbeddingService:
 
         for i, hashes in enumerate(hashes):
             vector = results[i]
-            embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
-            await self.acache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
+            if self.use_sql_cache:
+                embeddings_to_create.append(QueryEmbedding(query_hash=hashes, vector=vector))
+            if self.use_redis_cache:
+                await self.acache_set(hashes, np.array(vector) if isinstance(vector, list) else vector)
 
-        # Use bulk_create for high efficiency
-        await QueryEmbedding.objects.abulk_create(
-            embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
-        )
+        if self.use_sql_cache:
+            # Use bulk_create for high efficiency
+            await QueryEmbedding.objects.abulk_create(
+                embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+            )
 
         return results
 
