@@ -51,17 +51,20 @@ class EmbeddingService:
         result_vector = None
         created = None
         if self.use_sql_cache:
-            obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
-            if created:
-                obj.vector = self.backend.embed_text(query_text)
-                if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
-                    obj.save(update_fields=["vector"])
-                    # obj.refresh_from_db(fields=["vector"])
-                    result_vector = obj.vector
-                else:
-                    logger.error(f"Invalid vector length: '{obj.vector}'")
-                    obj.delete()
-                    return None
+            try:
+                obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
+                if created:
+                    obj.vector = self.backend.embed_text(query_text)
+                    if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
+                        obj.save(update_fields=["vector"])
+                        # obj.refresh_from_db(fields=["vector"])
+                        result_vector = obj.vector
+                    else:
+                        logger.error(f"Invalid vector length: '{obj.vector}'")
+                        obj.delete()
+                        return None
+            except Exception as e:
+                logger.error(str(e))
         else:
             result_vector = self.backend.embed_text(query_text, input_type)
 
@@ -91,17 +94,20 @@ class EmbeddingService:
         result_vector = None
         created = None
         if self.use_sql_cache:
-            obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
-            if created:
-                obj.vector = await self.backend.aembed_text(query_text, input_type)
-                if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
-                    await obj.asave(update_fields=["vector"])
-                    # await obj.arefresh_from_db(fields=["vector"])
-                    result_vector = obj.vector
-                else:
-                    logger.error(f"Invalid vector length: '{obj.vector}'")
-                    await obj.adelete()
-                    return None
+            try:
+                obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
+                if created:
+                    obj.vector = await self.backend.aembed_text(query_text, input_type)
+                    if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
+                        await obj.asave(update_fields=["vector"])
+                        # await obj.arefresh_from_db(fields=["vector"])
+                        result_vector = obj.vector
+                    else:
+                        logger.error(f"Invalid vector length: '{obj.vector}'")
+                        await obj.adelete()
+                        return None
+            except Exception as e:
+                logger.error(str(e))
         else:
             result_vector = await self.backend.aembed_text(query_text, input_type)
         if self.use_redis_cache and result_vector is not None:
@@ -162,9 +168,12 @@ class EmbeddingService:
 
         if self.use_sql_cache:
             # Use bulk_create for high efficiency
-            QueryEmbedding.objects.bulk_create(
-                embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
-            )
+            try:
+                QueryEmbedding.objects.bulk_create(
+                    embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+                )
+            except Exception as e:
+                logger.error(str(e))
 
         return results
 
@@ -214,9 +223,12 @@ class EmbeddingService:
 
         if self.use_sql_cache:
             # Use bulk_create for high efficiency
-            await QueryEmbedding.objects.abulk_create(
-                embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
-            )
+            try:
+                await QueryEmbedding.objects.abulk_create(
+                    embeddings_to_create, update_conflicts=True, unique_fields=["query_hash"], update_fields=["vector"]
+                )
+            except Exception as e:
+                logger.error(str(e))
 
         return results
 
