@@ -19,6 +19,17 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
     class InputType(StrEnum):
         DOCUMENT = "document"
         QUERY = "query"
+        RETRIEVAL_QUERY = ""
+        RETRIEVAL_DOCUMENT = ""
+
+    PROMPTS = {
+        "google-gemma": {
+            InputType.QUERY: "task: search result | query: ",
+            InputType.DOCUMENT: "title: {title} | text: ",
+            InputType.RETRIEVAL_QUERY: "task: search result | query: ",
+            InputType.RETRIEVAL_DOCUMENT: "title: {title} | text: ",
+        }
+    }
 
     def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, **kwargs):
         model = model or settings.HUGGINGFACE_EMBEDDING_MODEL_NAME

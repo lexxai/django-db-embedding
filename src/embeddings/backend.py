@@ -21,6 +21,10 @@ class EmbeddingBackend(ABC):
     class InputType(StrEnum):
         DOCUMENT = "search_document"
         QUERY = "search_query"
+        RETRIEVAL_QUERY = "Retrieval-query"
+        RETRIEVAL_DOCUMENT = "Retrieval-document"
+
+    PROMPTS = {}
 
     def __init__(self, model: str = None, dimensions: int = None, preload: bool = False):
         self._client = None
@@ -104,3 +108,9 @@ class EmbeddingBackend(ABC):
                 f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
             )
             sleep(self.api_delay_time_seconds)
+
+    def generate_prompt(self, input_type: InputType, style: str, title: str = None) -> str:
+        prompt = self.PROMPTS.get(style, {}).get(input_type, "")
+        if prompt:
+            prompt = prompt.format(title=title)
+        return prompt
