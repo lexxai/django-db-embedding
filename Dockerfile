@@ -1,4 +1,4 @@
-ARG PYTHON_VER=3.13
+ARG PYTHON_VER=3.12
 
 FROM python:${PYTHON_VER} AS builder
 
