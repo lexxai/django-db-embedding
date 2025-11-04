@@ -77,8 +77,10 @@ if __name__ == "__main__":
                     logger.info(f"Length of vector [{i}]: {len(emb)}")
                     logger.info(f"{emb[:4]}...")
             elif embedding:
-                logger.info("Length of vector: %s", len(embedding))
-                logger.info(f"{embedding[:4]}...")
+                logger.info(f"Records of embeddings: {len(embedding)}")
+                for i, emb in enumerate(embedding):
+                    logger.info(f"Length of vector [{i}]: {len(emb)}")
+                    logger.info(f"{emb[:4]}...")
         logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
 
     def test_blok_1():
