@@ -39,50 +39,81 @@ class EmbeddingService:
     def get_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
+        if self.backend is None:
+            logger.error("Embedding backend not initialized.")
+            return None
         start_time = time.time()
         query_h = self.gen_hash_text(query_text, input_type)
-        if (vector := self.cache_get(query_h)) is not None:
+        if self.use_redis_cache and ((result_vector := self.cache_get(query_h)) is not None):
             duration = time.time() - start_time
             logger.debug(f"*** Time for get embed from Redis cache: {duration:.4f} seconds")
-            return vector
-        obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
-        if created:
-            obj.vector = self.backend.embed_text(query_text)
-            if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
-                obj.save(update_fields=["vector"])
-                obj.refresh_from_db(fields=["vector"])
+            return result_vector
+        result_vector = None
+        created = None
+        if self.use_sql_cache:
+            obj, created = QueryEmbedding.objects.get_or_create(query_hash=query_h)
+            if created:
+                obj.vector = self.backend.embed_text(query_text)
+                if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
+                    obj.save(update_fields=["vector"])
+                    # obj.refresh_from_db(fields=["vector"])
+                    result_vector = obj.vector
+                else:
+                    logger.error(f"Invalid vector length: '{obj.vector}'")
+                    obj.delete()
+                    return None
+        else:
+            result_vector = self.backend.embed_text(query_text, input_type)
+
+        if self.use_redis_cache and result_vector is not None:
+            if isinstance(result_vector, list):
+                import numpy as np
+
+                self.cache_set(query_h, np.array(result_vector))
             else:
-                logger.error(f"Invalid vector length: '{obj.vector}'")
-                obj.delete()
-                return None
-        self.cache_set(query_h, obj.vector)
+                self.cache_set(query_h, result_vector)
         duration = time.time() - start_time
         logger.debug(f"*** Time for get embed: {duration:.4f} seconds, SQL cache was {created=}")
-        return obj.vector
+        return result_vector
 
     async def aget_or_create_query_embedding(
         self, query_text: str, input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | None:
+        if self.backend is None:
+            logger.error("Embedding backend not initialized.")
+            return None
         start_time = time.time()
         query_h = self.gen_hash_text(query_text, input_type)
-        if (vector := await self.acache_get(query_h)) is not None:
+        if self.use_redis_cache and ((result_vector := await self.acache_get(query_h)) is not None):
             duration = time.time() - start_time
             logger.debug(f"*** Time for get embed from Redis cache: {duration:.4f} seconds")
-            return vector
-        obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
-        if created:
-            obj.vector = await self.backend.aembed_text(query_text, input_type)
-            if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
-                await obj.asave(update_fields=["vector"])
-                await obj.arefresh_from_db(fields=["vector"])
+            return result_vector
+        result_vector = None
+        created = None
+        if self.use_sql_cache:
+            obj, created = await QueryEmbedding.objects.aget_or_create(query_hash=query_h)
+            if created:
+                obj.vector = await self.backend.aembed_text(query_text, input_type)
+                if obj.vector is not None and 0 < len(obj.vector) <= self.backend.dimensions:
+                    await obj.asave(update_fields=["vector"])
+                    # await obj.arefresh_from_db(fields=["vector"])
+                    result_vector = obj.vector
+                else:
+                    logger.error(f"Invalid vector length: '{obj.vector}'")
+                    await obj.adelete()
+                    return None
+        else:
+            result_vector = await self.backend.aembed_text(query_text, input_type)
+        if self.use_redis_cache and result_vector is not None:
+            if isinstance(result_vector, list):
+                import numpy as np
+
+                await self.acache_set(query_h, np.array(result_vector))
             else:
-                logger.error(f"Invalid vector length: '{obj.vector}'")
-                await obj.adelete()
-                return None
-        await self.acache_set(query_h, obj.vector)
+                await self.acache_set(query_h, result_vector)
         duration = time.time() - start_time
         logger.debug(f"*** Time for get embed: {duration:.4f} seconds, SQL cache was {created=}")
-        return obj.vector
+        return result_vector
 
     def get_or_create_documents_embedding(
         self, texts: list[str], input_type: EmbeddingBackend.InputType = None
@@ -110,7 +141,7 @@ class EmbeddingService:
                 texts_to_embed.append(text)
                 texts_to_embed_id.append(i)
 
-        vectors = self.backend.embed_texts(texts_to_embed, input_type=input_type)
+        vectors = self.backend.embed_texts(texts_to_embed, input_type=input_type) if texts_to_embed else None
 
         if vectors is None:
             return results
@@ -162,7 +193,7 @@ class EmbeddingService:
                 texts_to_embed.append(text)
                 texts_to_embed_id.append(i)
 
-        vectors = await self.backend.aembed_texts(texts_to_embed, input_type=input_type)
+        vectors = await self.backend.aembed_texts(texts_to_embed, input_type=input_type) if texts_to_embed else None
 
         if vectors is None:
             return results
