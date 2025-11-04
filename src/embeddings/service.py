@@ -21,8 +21,8 @@ class EmbeddingService:
         self._backend = backend
         assert backend, "Backend must be initialized"
         self.cache_time = settings.EMBEDDING_SERVICE_CACHE_TIME
-        self.use_redis_cache = True
-        self.use_sql_cache = True
+        self.use_redis_cache = settings.EMBEDDING_SERVICE_REDIS_CACHE_ENABLED
+        self.use_sql_cache = settings.EMBEDDING_SERVICE_SQL_CACHE_ENABLED
 
     @property
     def backend(self):

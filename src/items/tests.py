@@ -60,7 +60,11 @@ if __name__ == "__main__":
         logger.info(f"*** Memory before: {mem_before:.2f} MB")
 
         start_time = time.time()
-        embedding = async_to_sync(embedding_service.aget_or_create_documents_embedding)(test_documents)
+        if embedding_service.is_async_prefer:
+            embedding = async_to_sync(embedding_service.aget_or_create_documents_embedding)(test_documents)
+        else:
+            embedding = embedding_service.get_or_create_documents_embedding(test_documents)
+
         end_time = time.time()
 
         mem_after = get_memory_usage()
@@ -89,6 +93,16 @@ if __name__ == "__main__":
     def test_block_2():
         test_documents = ["Test list 1", "Test list 2", "Test list 3", "Test list 4"]
         test_batch_documents(test_documents)
+        test_batch_documents(test_documents)
+
+    def test_block_3():
+        test_instance("Test init")
+        test_instance("Test second")
+
+    # START:
+    if not embedding_service:
+        logger.error("Embedding backend not initialized.")
+        exit()
 
     test_block_2()
 
