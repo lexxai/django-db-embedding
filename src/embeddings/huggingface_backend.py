@@ -20,19 +20,28 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
         DOCUMENT = "document"
         QUERY = "query"
 
-    def __init__(self, model: str = None, dimensions: int = None, **kwargs):
+    def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, **kwargs):
         model = model or settings.HUGGINGFACE_EMBEDDING_MODEL_NAME
         super().__init__(model, dimensions)
         assert self.model, "HUGGINGFACE_EMBEDDING_MODEL_NAME must be set"
+        self.api_key = api_key
         self._client = None
 
     def get_client(self):
         import torch  # noqa: F401
         from sentence_transformers import SentenceTransformer
 
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.api_key = self.api_key or settings.HUGGINGFACE_API_KEY
+        if self.api_key:
+            from huggingface_hub import login
+
+            login(token=self.api_key)
+
         cache_dir: Path = settings.EMBEDDING_MODELS_CACHE_DIR
         cache_dir.mkdir(exist_ok=True, parents=True)
-        client = SentenceTransformer(self.model, cache_folder=str(cache_dir))
+        client = SentenceTransformer(self.model, cache_folder=str(cache_dir)).to(device)
         # if self.dimensions:
         #     client.max_seq_length = self.dimensions
 
@@ -75,9 +84,9 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
         if not texts:
             return None
         if isinstance(texts, list):
-            logger.debug(f"embed_texts: texts count: {len(texts)}. {input_type=} {self.get_prompt_name(input_type)}")
+            logger.debug(f"embed_texts: texts count: {len(texts)}. {self.get_prompt_name(input_type)}")
         else:
-            logger.debug(f"embed_texts: text: {texts[:20]}. {input_type=} {self.get_prompt_name(input_type)}")
+            logger.debug(f"embed_texts: text: {texts[:20]}. {self.get_prompt_name(input_type)}")
 
         try:
             embeddings = self.client.encode(
