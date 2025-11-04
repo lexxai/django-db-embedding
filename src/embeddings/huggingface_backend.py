@@ -75,9 +75,9 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
         if not texts:
             return None
         if isinstance(texts, list):
-            logger.debug(f"embed_texts: texts count: {len(texts)}")
+            logger.debug(f"embed_texts: texts count: {len(texts)}. {input_type=} {self.get_prompt_name(input_type)}")
         else:
-            logger.debug(f"embed_texts: text: {texts[:20]}")
+            logger.debug(f"embed_texts: text: {texts[:20]}. {input_type=} {self.get_prompt_name(input_type)}")
 
         try:
             embeddings = self.client.encode(

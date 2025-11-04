@@ -192,14 +192,53 @@ async def acreate_item_embeddings_in_batch(batch_data: list[dict], input_type: E
     # Create ItemEmbedding objects for bulk update/creation
     embeddings_to_create = []
     for i, item_data in enumerate(batch_data):
+        if vectors[i] is None:
+            continue
         embeddings_to_create.append(
             ItemEmbedding(item_id=item_data["id"], vector=vectors[i], model=embedding_service.backend.model_name)
         )
 
     # Use bulk_create for high efficiency
-    await ItemEmbedding.objects.abulk_create(
-        embeddings_to_create, update_conflicts=True, unique_fields=["item_id"], update_fields=["vector", "model"]
-    )
+    if embeddings_to_create:
+        await ItemEmbedding.objects.abulk_create(
+            embeddings_to_create, update_conflicts=True, unique_fields=["item_id"], update_fields=["vector", "model"]
+        )
+
+
+def create_item_embeddings_in_batch(batch_data: list[dict], input_type: EmbeddingBackend.InputType = None):
+    """
+    Generates and saves embeddings for a batch of item data.
+    `batch_data` is a list of dictionaries, each with 'id', 'title', 'description'.
+    """
+    if not embedding_service:
+        logger.error("Embedding backend not initialized.")
+        return
+
+    input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+
+    texts_to_embed = [f"{item['title']} {item['description']}" for item in batch_data]
+
+    # Assuming your backend has a method to embed a list of texts
+    vectors = embedding_service.get_or_create_documents_embedding(texts_to_embed, input_type=input_type)
+
+    if not vectors or len(vectors) != len(batch_data):
+        logger.error("Mismatch between number of items and generated vectors.")
+        return
+
+    # Create ItemEmbedding objects for bulk update/creation
+    embeddings_to_create = []
+    for i, item_data in enumerate(batch_data):
+        if vectors[i] is None:
+            continue
+        embeddings_to_create.append(
+            ItemEmbedding(item_id=item_data["id"], vector=vectors[i], model=embedding_service.backend.model_name)
+        )
+
+    # Use bulk_create for high efficiency
+    if embeddings_to_create:
+        ItemEmbedding.objects.bulk_create(
+            embeddings_to_create, update_conflicts=True, unique_fields=["item_id"], update_fields=["vector", "model"]
+        )
 
 
 #
