@@ -28,6 +28,10 @@ class EmbeddingService:
     def backend(self):
         return self._backend
 
+    @property
+    def is_async_prefer(self) -> bool | None:
+        return None if self.backend is None else self.backend.is_async_prefer
+
     def gen_hash_text(self, text: str, input_type: EmbeddingBackend.InputType = None):
         query_text_hash = self.backend.model_name + (str(input_type) or "") + text
         return hash_query(query_text_hash)
@@ -87,11 +91,11 @@ class EmbeddingService:
         Generates and saves embeddings for a batch of item data.
         `batch_data` is a list of dictionaries, each with 'id', 'title', 'description'.
         """
-        if not embedding_service:
+        if self.backend is None:
             logger.error("Embedding backend not initialized.")
             return None
 
-        input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+        input_type = input_type or self.backend.InputType.DOCUMENT
 
         results: list[list[float] | None] = [None] * len(texts)
         texts_to_embed: list[str] = []
@@ -100,13 +104,13 @@ class EmbeddingService:
         for i, text in enumerate(texts):
             query_h = self.gen_hash_text(text, input_type)
             hashes.append(query_h)
-            if (vector := self.cache_get(query_h)) is not None:
+            if self.use_redis_cache and ((vector := self.cache_get(query_h)) is not None):
                 results[i] = vector
             else:
                 texts_to_embed.append(text)
                 texts_to_embed_id.append(i)
 
-        vectors = embedding_service.backend.embed_texts(texts_to_embed, input_type=input_type)
+        vectors = self.backend.embed_texts(texts_to_embed, input_type=input_type)
 
         if vectors is None:
             return results
@@ -139,11 +143,11 @@ class EmbeddingService:
         """
         Generates and saves embeddings for a batch of item data.
         """
-        if not embedding_service:
+        if self.backend is None:
             logger.error("Embedding backend not initialized.")
             return None
 
-        input_type = input_type or embedding_service.backend.InputType.DOCUMENT
+        input_type = input_type or self.backend.InputType.DOCUMENT
 
         results: list[list[float] | None] = [None] * len(texts)
         texts_to_embed: list[str] = []
@@ -158,7 +162,7 @@ class EmbeddingService:
                 texts_to_embed.append(text)
                 texts_to_embed_id.append(i)
 
-        vectors = await embedding_service.backend.aembed_texts(texts_to_embed, input_type=input_type)
+        vectors = await self.backend.aembed_texts(texts_to_embed, input_type=input_type)
 
         if vectors is None:
             return results
