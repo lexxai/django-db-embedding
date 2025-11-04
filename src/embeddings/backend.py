@@ -16,6 +16,7 @@ class EmbeddingBackend(ABC):
     """Abstract base class for embedding backends."""
 
     name = "abstract"
+    is_async_prefer = True
 
     class InputType(StrEnum):
         DOCUMENT = "search_document"

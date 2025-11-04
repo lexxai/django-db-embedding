@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class HuggingFaceEmbeddingBackend(EmbeddingBackend):
     name = "huggingface"
+    is_async_prefer = False
 
     class InputType(StrEnum):
         DOCUMENT = "document"
@@ -64,11 +65,15 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
     def embed_text(
         self, text: str | list[str], input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | list[list[float]] | None:
+        if not text:
+            return None
         return self.embed_texts(text, input_type=input_type)
 
     def embed_texts(
         self, texts: str | list[str], input_type: EmbeddingBackend.InputType = None
     ) -> list[float] | list[list[float]] | None:
+        if not texts:
+            return None
         if isinstance(texts, list):
             logger.debug(f"embed_texts: texts count: {len(texts)}")
         else:
@@ -84,7 +89,7 @@ class HuggingFaceEmbeddingBackend(EmbeddingBackend):
 
             result = embeddings.tolist()
             if not result:
-                logger.error("Invalid result")
+                logger.error(f"Invalid result {embeddings}")
                 return None
 
             return result
