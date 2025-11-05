@@ -113,12 +113,16 @@ if __name__ == "__main__":
         test_instance("Test init")
         test_instance("Test second")
 
+    def test_block_4():
+        test_instance("Test init")
+        test_instance("Test second")
+
     # START:
     if not embedding_service:
         logger.error("Embedding backend not initialized.")
         exit()
 
-    test_block_1()
+    test_block_4()
 
-    logger.info("*** Sleep for 30 seconds")
-    time.sleep(30)
+    # logger.info("*** Sleep for 30 seconds")
+    # time.sleep(30)
