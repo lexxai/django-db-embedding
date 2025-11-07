@@ -10,7 +10,7 @@ from django.contrib.postgres.search import SearchVector
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from embeddings.backend import EmbeddingBackend
+from embeddings.embedding_backend import EmbeddingBackend
 from embeddings.service import embedding_service
 from .models import Item, ItemEmbedding
 from .repository import acreate_item_embeddings_in_batch, create_item_embeddings_in_batch

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils.module_loading import import_string
 
-from embeddings.backend import EmbeddingBackend
+from embeddings.embedding_backend import EmbeddingBackend
 from items.models import QueryEmbedding
 from items.utils import hash_query
 
