@@ -15,7 +15,8 @@ dependencies = [
     "celery-types>=0.23.0",
     "openai>=2.7.1",
     "cohere>=5.20.0",
-    "py-cpuinfo>=9.0.0"
+    "py-cpuinfo>=9.0.0",
+    "httpx[http2,socks]>=0.28.1",
 ]
 
 

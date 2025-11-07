@@ -26,7 +26,7 @@ class EmbeddingBackend(ABC):
 
     PROMPTS = {}
 
-    def __init__(self, model: str = None, dimensions: int = None, preload: bool = False):
+    def __init__(self, model: str = None, dimensions: int = None, preload: bool = False, **kwargs):
         self._client = None
         self.model = model
         self.dimensions = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
