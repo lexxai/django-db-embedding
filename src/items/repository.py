@@ -7,7 +7,7 @@ from django.contrib.postgres.search import SearchRank, SearchQuery
 from django.db.models import F, Q
 from pgvector.django import CosineDistance
 
-from embeddings.backend import EmbeddingBackend
+from embeddings.embedding_backend import EmbeddingBackend
 from embeddings.service import embedding_service
 from items.models import Item, ItemEmbedding
 

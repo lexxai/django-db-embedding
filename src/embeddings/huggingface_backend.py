@@ -9,7 +9,7 @@ from typing import Literal
 from asgiref.sync import sync_to_async
 from django.conf import settings
 
-from embeddings.backend import EmbeddingBackend
+from embeddings.embedding_backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import logging
 from asgiref.sync import async_to_sync
 from django.conf import settings
 
-from embeddings.backend import EmbeddingBackend
+from embeddings.embedding_backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 

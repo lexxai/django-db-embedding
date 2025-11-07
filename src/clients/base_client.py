@@ -2,6 +2,8 @@ import gc
 import inspect
 import logging
 from abc import ABC, abstractmethod
+from asyncio import sleep as asleep
+from time import sleep
 
 from asgiref.sync import sync_to_async, async_to_sync
 from django.conf import settings
@@ -70,3 +72,17 @@ class BaseClient(ABC):
                 gc.collect()
                 return None
         return None
+
+    async def adelay_rpm(self):
+        if self.api_delay_time_enabled:
+            logger.debug(
+                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+            )
+            await asleep(self.api_delay_time_seconds)
+
+    def delay_rpm(self):
+        if self.api_delay_time_enabled:
+            logger.debug(
+                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
+            )
+            sleep(self.api_delay_time_seconds)
