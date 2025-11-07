@@ -39,9 +39,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         logger.debug(f"aembed_text text: {text}")
         await self.client.adelay_rpm()
         try:
-            response = await self.client.client.embeddings.create(
-                model=self.model, input=text, dimensions=self.dimensions
-            )
+            response = await self.client.embeddings.create(model=self.model, input=text, dimensions=self.dimensions)
             if not response or not getattr(response, "data", None):
                 logger.error(f"Invalid response: '{response}'")
                 return None
@@ -61,9 +59,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         logger.debug(f"aembed_texts texts count: {len(texts)}")
         await self.client.adelay_rpm()
         try:
-            response = await self.client.client.embeddings.create(
-                model=self.model, input=texts, dimensions=self.dimensions
-            )
+            response = await self.client.embeddings.create(model=self.model, input=texts, dimensions=self.dimensions)
             if not response or not getattr(response, "data", None):
                 logger.error(f"Invalid response: '{response}'")
                 return None

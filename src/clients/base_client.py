@@ -37,6 +37,12 @@ class BaseClient(ABC):
             self._client = self.get_client()
         return self._client
 
+    def __getattr__(self, name):
+        """Delegate attribute access to the underlying client."""
+        if name in self.__dict__:
+            return self.__dict__[name]
+        return getattr(self.client, name)
+
     def close(self):
         if self._client:
             close_method = getattr(self._client, "close", getattr(self._client, "aclose", None))
