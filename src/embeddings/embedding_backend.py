@@ -1,13 +1,10 @@
-import gc
-import inspect
 import logging
 from abc import ABC, abstractmethod
-from asyncio import sleep as asleep
 from enum import StrEnum
-from time import sleep
 
-from asgiref.sync import sync_to_async, async_to_sync
 from django.conf import settings
+
+from clients.base_client import BaseClient
 
 logger = logging.getLogger(__name__)
 
@@ -16,23 +13,33 @@ class EmbeddingBackend(ABC):
     """Abstract base class for embedding backends."""
 
     name = "abstract"
+    is_async_prefer = True
+    clientClass = None
 
     class InputType(StrEnum):
         DOCUMENT = "search_document"
         QUERY = "search_query"
+        RETRIEVAL_QUERY = "Retrieval-query"
+        RETRIEVAL_DOCUMENT = "Retrieval-document"
 
-    def __init__(self, model: str = None, dimensions: int = None, preload: bool = False):
-        self._client = None
+    PROMPTS = {}
+
+    def __init__(
+        self, model: str = None, dimensions: int = None, preload: bool = False, client: BaseClient = None, **kwargs
+    ):
+        self._client = client
         self.model = model
         self.dimensions = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
-        self.api_delay_time_enabled: bool = settings.API_DELAY_TIME_ENABLED
-        self.api_delay_time_rpm = settings.API_DELAY_TIME_RPM
-        self.api_delay_time_seconds: float = 60 / (self.api_delay_time_rpm or 1)
+        self.kwargs = kwargs
         if preload or settings.EMBEDDING_BACKEND_PRELOAD:
             self.get_client()
 
-    @abstractmethod
-    def get_client(self): ...
+    def get_client(self):
+        if self._client is None:
+            assert self.clientClass, "clientClass is not defined"
+            self._client = self.clientClass(is_async=self.is_async_prefer, **self.kwargs)
+            assert self._client, "Failed to initialize {clientClass.name} client"
+        return self._client
 
     @property
     def client(self):
@@ -41,23 +48,14 @@ class EmbeddingBackend(ABC):
         return self._client
 
     def close(self):
-        if self._client:
-            close_method = getattr(self._client, "close", getattr(self._client, "aclose", None))
-            if close_method:
-                if inspect.iscoroutinefunction(close_method):
-                    try:
-                        async_to_sync(close_method)()
-                    except Exception:
-                        ...
-                else:
-                    # Run synchronous close in a thread to avoid blocking the event loop
-                    close_method()
+        if self._client is not None:
+            self._client.close()
             self._client = None
-            gc.collect()
 
     async def aclose(self):
-        """Asynchronously close the backend by running the synchronous close method in a thread."""
-        await sync_to_async(self.close)()
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
 
     @abstractmethod
     def embed_text(self, text: str, input_type: InputType = None) -> list[float]:
@@ -90,16 +88,8 @@ class EmbeddingBackend(ABC):
             return None
         return str(input_type)
 
-    async def adelay_rpm(self):
-        if self.api_delay_time_enabled:
-            logger.debug(
-                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
-            )
-            await asleep(self.api_delay_time_seconds)
-
-    def delay_rpm(self):
-        if self.api_delay_time_enabled:
-            logger.debug(
-                f"Sleep for api delay: {self.api_delay_time_seconds:.2} sec. ({settings.API_DELAY_TIME_RPM} RPM)"
-            )
-            sleep(self.api_delay_time_seconds)
+    def generate_prompt(self, input_type: InputType, style: str, title: str = None) -> str:
+        prompt = self.PROMPTS.get(style, {}).get(input_type, "")
+        if prompt:
+            prompt = prompt.format(title=title)
+        return prompt

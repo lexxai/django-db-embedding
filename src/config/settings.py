@@ -183,19 +183,28 @@ VECTOR_EMBEDDIG_ENABLED = environ.get("VECTOR_EMBEDDIG_ENABLED", "True").lower()
 # Embedding models
 # OpenAI
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
-OPENAI_API_BASE = environ.get("OPENAI_API_BASE")
+OPENAI_BASE_URL = environ.get("OPENAI_BASE_URL")
 OPENAI_EMBEDDIG_MODEL_NAME = environ.get("OPENAI_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
 OPENAI_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OPENAI_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 
 # Cohere
 COHERE_API_KEY = environ.get("COHERE_API_KEY")
-COHERE_API_BASE = environ.get("COHERE_API_BASE")
+COHERE_BASE_URL = environ.get("COHERE_BASE_URL")
 COHERE_EMBEDDIG_MODEL_NAME = environ.get("COHERE_EMBEDDIG_MODEL_NAME", "embed-v4.0")
 COHERE_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("COHERE_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 
 # HuggingFace
 HUGGINGFACE_EMBEDDING_MODEL_NAME = environ.get("HUGGINGFACE_EMBEDDING_MODEL_NAME", "BAAI/bge-m3")
 HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS", 1024))
+HUGGINGFACE_API_KEY = environ.get("HUGGINGFACE_API_KEY")
+SENTENCE_TRANSFORMER_BACKEND = environ.get("SENTENCE_TRANSFORMER_BACKEND", "torch")
+OPTIMIZED_ONNX_FILE_ENABLED = environ.get("OPTIMIZED_ONNX_FILE_ENABLED", "True").lower() == "true"
+
+# Ollama
+OLLAMA_API_KEY = environ.get("OLLAMA_API_KEY")
+OLLAMA_BASE_URL = environ.get("OLLAMA_BASE_URL")
+OLLAMA_EMBEDDIG_MODEL_NAME = environ.get("OLLAMA_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
+OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 
 
 API_DELAY_TIME_ENABLED = environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true"
@@ -205,20 +214,30 @@ EMBEDDING_BACKEND_CLASSES = {
     "openai": "embeddings.openai_backend.OpenAIEmbeddingBackend",
     "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
     "huggingface": "embeddings.huggingface_backend.HuggingFaceEmbeddingBackend",
+    "ollama": "embeddings.ollama_backend.OllamaEmbeddingBackend",
 }
 
 EMBEDDING_BACKEND_PRELOAD = environ.get("EMBEDDING_BACKEND_PRELOAD", "False").lower() == "true"
 EMBEDDING_BACKEND = environ.get("EMBEDDING_BACKEND", "huggingface")
 EMBEDDING_BATCH_SIZE = 100
 EMBEDDING_SERVICE_CACHE_TIME: int | None = 7 * 24 * 60 * 60  # 7 days, of None for disable
+EMBEDDING_SERVICE_REDIS_CACHE_ENABLED = environ.get("EMBEDDING_SERVICE_REDIS_CACHE_ENABLED", "True").lower() == "true"
+EMBEDDING_SERVICE_SQL_CACHE_ENABLED = environ.get("EMBEDDING_SERVICE_SQL_CACHE_ENABLED", "True").lower() == "true"
 
 EMBEDDING_MODELS_CACHE_DIR = BASE_DIR.parent / environ.get("EMBEDDING_MODELS_CACHE_DIR", "data/models")
 VECTOR_EMBEDDING_DIMENSIONS = {
     "openai": OPENAI_VECTOR_EMBEDDIG_DIMENSIONS,
     "cohere": COHERE_VECTOR_EMBEDDIG_DIMENSIONS,
     "huggingface": HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS,
+    "ollama": OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS,
 }.get(EMBEDDING_BACKEND)
 assert VECTOR_EMBEDDING_DIMENSIONS, "Invalid VECTOR_EMBEDDIG_DIMENSIONS, check EMBEDDING_BACKEND value"
+
+# HTTPX Client settings
+#  "http://user:password@host:port",  "socks5://user:password@host:port"
+HTTPX_PROXY_SERVER = environ.get("HTTPX_PROXY_SERVER")
+HTTPX_HTTP2_ENABLED = environ.get("HTTPX_HTTP2_ENABLED", "True").lower() == "true"
+
 
 # Logging settings
 LOGGING = {

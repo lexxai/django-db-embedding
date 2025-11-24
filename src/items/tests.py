@@ -18,6 +18,18 @@ if __name__ == "__main__":
 
     from embeddings.service import embedding_service
 
+    def test_generate_prompt(
+        input_type: embedding_service.backend.InputType = None, style: str = None, title: str = None
+    ):
+        generate_prompt = embedding_service.backend.generate_prompt
+        logger.info("%s", generate_prompt(embedding_service.backend.InputType.DOCUMENT, "google-gemma"))
+        logger.info(
+            "%s", generate_prompt(embedding_service.backend.InputType.DOCUMENT, "google-gemma", title="title example")
+        ),
+        logger.info("%s", generate_prompt(embedding_service.backend.InputType.QUERY, "google-gemma"))
+        if style and input_type:
+            logger.info("%s", generate_prompt(input_type, style, title))
+
     def get_memory_usage():
         """Returns the memory usage of the current process in MB."""
         process = psutil.Process(os.getpid())
@@ -60,7 +72,11 @@ if __name__ == "__main__":
         logger.info(f"*** Memory before: {mem_before:.2f} MB")
 
         start_time = time.time()
-        embedding = async_to_sync(embedding_service.aget_or_create_documents_embedding)(test_documents)
+        if embedding_service.is_async_prefer:
+            embedding = async_to_sync(embedding_service.aget_or_create_documents_embedding)(test_documents)
+        else:
+            embedding = embedding_service.get_or_create_documents_embedding(test_documents)
+
         end_time = time.time()
 
         mem_after = get_memory_usage()
@@ -73,11 +89,13 @@ if __name__ == "__main__":
                     logger.info(f"Length of vector [{i}]: {len(emb)}")
                     logger.info(f"{emb[:4]}...")
             elif embedding:
-                logger.info("Length of vector: %s", len(embedding))
-                logger.info(f"{embedding[:4]}...")
+                logger.info(f"Records of embeddings: {len(embedding)}")
+                for i, emb in enumerate(embedding):
+                    logger.info(f"Length of vector [{i}]: {len(emb)}")
+                    logger.info(f"{emb[:4]}...")
         logger.info(f"*** Time taken to embed: {(end_time - start_time):.4f} seconds")
 
-    def test_blok_1():
+    def test_block_1():
         test_instance("Test init")
         test_instance("Test second")
         logger.info("******** Embedding service closing now for free resources")
@@ -89,8 +107,22 @@ if __name__ == "__main__":
     def test_block_2():
         test_documents = ["Test list 1", "Test list 2", "Test list 3", "Test list 4"]
         test_batch_documents(test_documents)
+        test_batch_documents(test_documents)
 
-    test_block_2()
+    def test_block_3():
+        test_instance("Test init")
+        test_instance("Test second")
 
-    logger.info("*** Sleep for 30 seconds")
-    time.sleep(30)
+    def test_block_4():
+        test_instance("Test init")
+        test_instance("Test second")
+
+    # START:
+    if not embedding_service:
+        logger.error("Embedding backend not initialized.")
+        exit()
+
+    test_block_4()
+
+    # logger.info("*** Sleep for 30 seconds")
+    # time.sleep(30)

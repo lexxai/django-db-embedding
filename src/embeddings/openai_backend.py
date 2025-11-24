@@ -3,32 +3,29 @@ import logging
 from asgiref.sync import async_to_sync
 from django.conf import settings
 
-from embeddings.backend import EmbeddingBackend
+from clients.base_client import BaseClient
+from clients.openai_client import OpenAIClient
+from embeddings.embedding_backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 
 
 class OpenAIEmbeddingBackend(EmbeddingBackend):
     name = "openai"
+    clientClass = OpenAIClient
 
-    def __init__(self, model: str = None, dimensions: int = None, api_key: str = None, api_base: str = None):
+    def __init__(
+        self, model: str = None, dimensions: int = None, preload: bool = False, client: BaseClient = None, **kwargs
+    ):
         model = model or settings.OPENAI_EMBEDDIG_MODEL_NAME
-        super().__init__(model, dimensions)
+        super().__init__(model, dimensions, preload, client, **kwargs)
         assert self.model, "OPENAI_EMBEDDIG_MODEL_NAME must be set"
-        self.api_key = api_key
-        self.api_base = api_base
 
     def get_client(self):
-        from openai import AsyncOpenAI
-
-        params = {}
-        if self.api_key:
-            params["api_key"] = self.api_key or settings.COHERE_API_KEY
-        if self.api_base:
-            params["base_url"] = self.api_base or settings.COHERE_API_BASE
-        client = AsyncOpenAI(**params)
-        assert client, "Failed to initialize OpenAI client"
-        return client
+        if self._client is None:
+            self._client = self.clientClass(is_async=self.is_async_prefer, **self.kwargs)
+            assert self._client, "Failed to initialize {clientClass.name} client"
+        return self._client
 
     def embed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         response = async_to_sync(self.aembed_text)(text)
@@ -40,7 +37,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
 
     async def aembed_text(self, text: str, input_type: EmbeddingBackend.InputType = None) -> list[float] | None:
         logger.debug(f"aembed_text text: {text}")
-        await self.adelay_rpm()
+        await self.client.adelay_rpm()
         try:
             response = await self.client.embeddings.create(model=self.model, input=text, dimensions=self.dimensions)
             if not response or not getattr(response, "data", None):
@@ -60,7 +57,7 @@ class OpenAIEmbeddingBackend(EmbeddingBackend):
         self, texts: list[str], input_type: EmbeddingBackend.InputType = None
     ) -> list[list[float]] | None:
         logger.debug(f"aembed_texts texts count: {len(texts)}")
-        await self.adelay_rpm()
+        await self.client.adelay_rpm()
         try:
             response = await self.client.embeddings.create(model=self.model, input=texts, dimensions=self.dimensions)
             if not response or not getattr(response, "data", None):

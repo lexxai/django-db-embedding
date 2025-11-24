@@ -2,6 +2,7 @@ ARG PYTHON_VER=3.13
 
 FROM python:${PYTHON_VER} AS builder
 
+ARG PYTHON_VER
 # Install uv
 # RUN pip install uv
 # Use an official image to get the uv binary
@@ -12,7 +13,8 @@ WORKDIR /app
 
 # Install dependencies
 COPY "pyproject.toml" "uv.lock" .
-RUN uv sync --locked --no-group dev  --all-groups
+#--locked
+RUN uv sync --locked --no-group dev  --all-groups --extra torch-cpu -p ${PYTHON_VER}
 
 FROM python:${PYTHON_VER}-slim
 
