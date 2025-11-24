@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from importlib.util import find_spec
 from os import environ
 from pathlib import Path
 
@@ -55,7 +56,13 @@ MIDDLEWARE = [
 ]
 
 if SERVE_STATIC_FILES:
-    MIDDLEWARE.insert(0, "whitenoise.middleware.WhiteNoiseMiddleware")
+    if find_spec("whitenoise") is not None:
+        MIDDLEWARE.insert(0, "whitenoise.middleware.WhiteNoiseMiddleware")
+    else:
+        print(
+            "[WARNING] WhiteNoise is not installed, serving static files will not work, can disable it waring by "
+            "setting SERVE_STATIC_FILES=False or installing WhiteNoise by 'uv sync --group deploy'"
+        )
 
 
 ROOT_URLCONF = "config.urls"
@@ -206,6 +213,12 @@ OLLAMA_BASE_URL = environ.get("OLLAMA_BASE_URL")
 OLLAMA_EMBEDDIG_MODEL_NAME = environ.get("OLLAMA_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
 OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 
+# OpenRouter
+OPENROUTER_API_KEY = environ.get("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = environ.get("OPENROUTER_BASE_URL")
+OPENROUTER_EMBEDDIG_MODEL_NAME = environ.get("OPENROUTER_EMBEDDIG_MODEL_NAME", "x-ai/grok-4.1-fast:free")
+OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
+
 
 API_DELAY_TIME_ENABLED = environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true"
 API_DELAY_TIME_RPM = int(environ.get("API_DELAY_TIME_RPM", 95))  # RPM
@@ -215,6 +228,7 @@ EMBEDDING_BACKEND_CLASSES = {
     "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
     "huggingface": "embeddings.huggingface_backend.HuggingFaceEmbeddingBackend",
     "ollama": "embeddings.ollama_backend.OllamaEmbeddingBackend",
+    "openrouter": "embeddings.openrouter_backend.OpenRouterEmbeddingBackend",
 }
 
 EMBEDDING_BACKEND_PRELOAD = environ.get("EMBEDDING_BACKEND_PRELOAD", "False").lower() == "true"
@@ -230,6 +244,7 @@ VECTOR_EMBEDDING_DIMENSIONS = {
     "cohere": COHERE_VECTOR_EMBEDDIG_DIMENSIONS,
     "huggingface": HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS,
     "ollama": OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS,
+    "openrouter": OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS,
 }.get(EMBEDDING_BACKEND)
 assert VECTOR_EMBEDDING_DIMENSIONS, "Invalid VECTOR_EMBEDDIG_DIMENSIONS, check EMBEDDING_BACKEND value"
 
