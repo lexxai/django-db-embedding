@@ -51,6 +51,8 @@ torch-cu128 = [
     "sentence-transformers>=5.1.2"
 ]
 
+none = []
+
 #torch-rocm = [
 #    "torch>=2.9.0; sys_platform == 'linux'",
 #    "hf-xet>=1.2.0; sys_platform == 'linux'",
