@@ -463,7 +463,7 @@ requires-dist = [
     { name = "torch", marker = "extra == 'torch-cpu'", specifier = ">=2.9.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "django-db-embedding", extra = "torch-cpu" } },
     { name = "torch", marker = "extra == 'torch-cu128'", specifier = ">=2.9.0", index = "https://download.pytorch.org/whl/cu128", conflict = { package = "django-db-embedding", extra = "torch-cu128" } },
 ]
-provides-extras = ["torch-cpu", "torch-cu128", "onnx-cpu", "onnx-gpu"]
+provides-extras = ["torch-cpu", "torch-cu128", "none", "onnx-cpu", "onnx-gpu"]
 
 [package.metadata.requires-dev]
 deploy = [

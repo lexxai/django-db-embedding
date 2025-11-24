@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from importlib.util import find_spec
 from os import environ
 from pathlib import Path
 
@@ -55,7 +56,13 @@ MIDDLEWARE = [
 ]
 
 if SERVE_STATIC_FILES:
-    MIDDLEWARE.insert(0, "whitenoise.middleware.WhiteNoiseMiddleware")
+    if find_spec("whitenoise") is not None:
+        MIDDLEWARE.insert(0, "whitenoise.middleware.WhiteNoiseMiddleware")
+    else:
+        print(
+            "[WARNING] WhiteNoise is not installed, serving static files will not work, can disable it waring by "
+            "setting SERVE_STATIC_FILES=False or installing WhiteNoise by 'uv sync --group deploy'"
+        )
 
 
 ROOT_URLCONF = "config.urls"
@@ -180,6 +187,8 @@ FULLTEXT_SEARCH_ENABLED = environ.get("FULLTEXT_SEARCH_ENABLED", "True").lower()
 FULLTEXT_SEARCH_LANGUAGES = environ.get("FULLTEXT_SEARCH_LANGUAGES", "english,ukrainian").split(",")
 VECTOR_EMBEDDIG_ENABLED = environ.get("VECTOR_EMBEDDIG_ENABLED", "True").lower() == "true"
 
+VECTOR_DB_FIELD_FIXED_DIMENSIONS = environ.get("VECTOR_DB_FIELD_FIXED_DIMENSIONS", "False").lower() == "true"
+
 # Embedding models
 # OpenAI
 OPENAI_API_KEY = environ.get("OPENAI_API_KEY")
@@ -206,6 +215,12 @@ OLLAMA_BASE_URL = environ.get("OLLAMA_BASE_URL")
 OLLAMA_EMBEDDIG_MODEL_NAME = environ.get("OLLAMA_EMBEDDIG_MODEL_NAME", "text-embedding-3-small")
 OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS", 1536))
 
+# OpenRouter
+OPENROUTER_API_KEY = environ.get("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_EMBEDDIG_MODEL_NAME = environ.get("OPENROUTER_EMBEDDIG_MODEL_NAME", "sentence-transformers/all-minilm-l6-v2")
+OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS = int(environ.get("OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS", 384))
+
 
 API_DELAY_TIME_ENABLED = environ.get("API_DELAY_TIME_ENABLED", "True").lower() == "true"
 API_DELAY_TIME_RPM = int(environ.get("API_DELAY_TIME_RPM", 95))  # RPM
@@ -215,6 +230,7 @@ EMBEDDING_BACKEND_CLASSES = {
     "cohere": "embeddings.cohere_backend.CohereEmbeddingBackend",
     "huggingface": "embeddings.huggingface_backend.HuggingFaceEmbeddingBackend",
     "ollama": "embeddings.ollama_backend.OllamaEmbeddingBackend",
+    "openrouter": "embeddings.openrouter_backend.OpenRouterEmbeddingBackend",
 }
 
 EMBEDDING_BACKEND_PRELOAD = environ.get("EMBEDDING_BACKEND_PRELOAD", "False").lower() == "true"
@@ -230,6 +246,7 @@ VECTOR_EMBEDDING_DIMENSIONS = {
     "cohere": COHERE_VECTOR_EMBEDDIG_DIMENSIONS,
     "huggingface": HUGGINGFACE_VECTOR_EMBEDDIG_DIMENSIONS,
     "ollama": OLLAMA_VECTOR_EMBEDDIG_DIMENSIONS,
+    "openrouter": OPENROUTER_VECTOR_EMBEDDIG_DIMENSIONS,
 }.get(EMBEDDING_BACKEND)
 assert VECTOR_EMBEDDING_DIMENSIONS, "Invalid VECTOR_EMBEDDIG_DIMENSIONS, check EMBEDDING_BACKEND value"
 

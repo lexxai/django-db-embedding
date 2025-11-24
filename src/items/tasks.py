@@ -64,7 +64,9 @@ def _generate_item_embedding(item_id: int, input_type: EmbeddingBackend.InputTyp
         # Do not re-raise, as this is not a failure worth retrying.
 
 
-def _generate_item_embedding_in_batch(batch_size: int, input_type: EmbeddingBackend.InputType = None):
+def _generate_item_embedding_in_batch(
+    batch_size: int, input_type: EmbeddingBackend.InputType = None, overwrite: bool = False
+):
     logger.debug(f"Starting to embed items... {input_type=}")
     if not embedding_service:
         logger.error("Embedding service not initialized")
@@ -72,7 +74,10 @@ def _generate_item_embedding_in_batch(batch_size: int, input_type: EmbeddingBack
 
     model_name = embedding_service.backend.model_name
 
-    items_to_embed_qs = Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
+    if overwrite:
+        items_to_embed_qs = Item.objects.filter(embedding__model=model_name)
+    else:
+        items_to_embed_qs = Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
     total_count = items_to_embed_qs.count()
     logger.debug(f"Found {total_count} items to embed.")
 
@@ -92,15 +97,19 @@ def _generate_item_embedding_in_batch(batch_size: int, input_type: EmbeddingBack
     logger.debug("Finished embedding items.")
 
 
-async def _agenerate_item_embedding_in_batch(batch_size: int, input_type: EmbeddingBackend.InputType = None):
+async def _agenerate_item_embedding_in_batch(
+    batch_size: int, input_type: EmbeddingBackend.InputType = None, overwrite: bool = False
+):
     logger.debug("Async Starting to embed items...  {input_type=}")
     if not embedding_service:
         logger.error("Embedding service not initialized")
         return
 
     model_name = embedding_service.backend.model_name
-
-    items_to_embed_qs = Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
+    if overwrite:
+        items_to_embed_qs = Item.objects.filter(embedding__model=model_name)
+    else:
+        items_to_embed_qs = Item.objects.filter(Q(embedding__isnull=True) | ~Q(embedding__model=model_name))
     total_count = await items_to_embed_qs.acount()
     logger.debug(f"Found {total_count} items to embed.")
 

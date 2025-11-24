@@ -3,6 +3,7 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep as asleep
+from contextlib import asynccontextmanager
 from time import sleep
 
 from asgiref.sync import sync_to_async, async_to_sync
@@ -36,6 +37,14 @@ class BaseClient(ABC):
         if self._client is None:
             self._client = self.get_client()
         return self._client
+
+    @asynccontextmanager
+    async def aclient(self):
+        client = self.get_client()
+        try:
+            yield client
+        finally:
+            await client.aclose()
 
     def __getattr__(self, name):
         """Delegate attribute access to the underlying client."""
