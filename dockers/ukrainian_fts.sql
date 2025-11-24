@@ -2,7 +2,7 @@
 CREATE TEXT SEARCH DICTIONARY ukrainian_hunspell (
     TEMPLATE = ispell,
     DictFile = uk_UA,
-    AffFile = uk_UA
+    AffFile = uk_UA,
     StopWords = ukrainian
 );
 
