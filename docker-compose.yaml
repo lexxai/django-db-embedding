@@ -53,6 +53,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    environment:
+      - SERVE_STATIC_FILES=True
     env_file:
       - .env
 
