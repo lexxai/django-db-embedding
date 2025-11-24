@@ -10,7 +10,7 @@ python src/manage.py makemigrations --noinput && python src/manage.py migrate --
 echo "Running database setup search indexes..."
 python src/manage.py setup_search_indexes || true
 echo "Running creating superuser..."
-python src/manage.py createsuperuser --username admin  --noinput || true
+python src/manage.py createsuperuser --username admin  --noinput && echo "superuser name: admin" ||  true
 
 
 echo "Starting Gunicorn with Uvicorn workers..."
