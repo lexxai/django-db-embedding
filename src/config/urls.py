@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
+from django.views.generic.base import RedirectView
 
 from .api import api
 
@@ -25,4 +26,5 @@ API_PREFIX = "api/v1/"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(API_PREFIX, api.urls),
+    path("", RedirectView.as_view(url=f"/{API_PREFIX}docs", permanent=True)),
 ]
