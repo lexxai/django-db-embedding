@@ -16,6 +16,8 @@ class Command(BaseCommand):
     help = "Create FTS trigger, GIN index, and vector index for hybrid search"
 
     def handle(self, *args, **options):
+        vector_db_field_fixed_dimensions: bool = settings.VECTOR_DB_FIELD_FIXED_DIMENSIONS
+
         with connection.cursor() as cursor:
             self.stdout.write("Setting up hybrid search infrastructure...")
 
@@ -59,52 +61,55 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.SUCCESS("FTS trigger attached"))
 
-            # 3. Create GIN index on search_vector
-            cursor.execute(
-                f"""
-                CREATE INDEX IF NOT EXISTS {TSVECTOR_TABLE_NAME}_{TSVECTOR_COLUMN}_idx
-                ON {TSVECTOR_TABLE_NAME} USING GIN ({TSVECTOR_COLUMN});
-            """
-            )
-            self.stdout.write(self.style.SUCCESS("GIN index created"))
-
-            # 4. Create vector index (IVFFlat)
-            # Estimate lists: ~rows / 1000, but min 10, max 1000
-            cursor.execute(f"SELECT COUNT(*) FROM {VECTOR_TABLE_NAME};")
-            row_count = cursor.fetchone()[0] or 1
-            lists = min(max(10, row_count // 1000), 1000)
-
-            # Optional: Use HNSW if supported (pgvector >= 0.5 + PG >= 16)
-            use_hnsw = getattr(settings, "USE_HNSW_INDEX", False)
-
-            if use_hnsw:
-                # HNSW is more accurate & faster, but requires newer pgvector
+            if vector_db_field_fixed_dimensions:
+                # 3. Create GIN index on search_vector
                 cursor.execute(
                     f"""
-                    CREATE INDEX IF NOT EXISTS {VECTOR_TABLE_NAME}_{VECTOR_COLUMN}_hnsw_idx
-                    ON {VECTOR_TABLE_NAME} USING hnsw ({VECTOR_COLUMN} vector_cosine_ops);
+                    CREATE INDEX IF NOT EXISTS {TSVECTOR_TABLE_NAME}_{TSVECTOR_COLUMN}_idx
+                    ON {TSVECTOR_TABLE_NAME} USING GIN ({TSVECTOR_COLUMN});
                 """
                 )
-                self.stdout.write(self.style.SUCCESS("HNSW vector index created (lists auto-tuned: N/A)"))
+                self.stdout.write(self.style.SUCCESS("GIN index created"))
+
+                # 4. Create vector index (IVFFlat)
+                # Estimate lists: ~rows / 1000, but min 10, max 1000
+                cursor.execute(f"SELECT COUNT(*) FROM {VECTOR_TABLE_NAME};")
+                row_count = cursor.fetchone()[0] or 1
+                lists = min(max(10, row_count // 1000), 1000)
+
+                # Optional: Use HNSW if supported (pgvector >= 0.5 + PG >= 16)
+                use_hnsw = getattr(settings, "USE_HNSW_INDEX", False)
+
+                if use_hnsw:
+                    # HNSW is more accurate & faster, but requires newer pgvector
+                    cursor.execute(
+                        f"""
+                        CREATE INDEX IF NOT EXISTS {VECTOR_TABLE_NAME}_{VECTOR_COLUMN}_hnsw_idx
+                        ON {VECTOR_TABLE_NAME} USING hnsw ({VECTOR_COLUMN} vector_cosine_ops);
+                    """
+                    )
+                    self.stdout.write(self.style.SUCCESS("HNSW vector index created (lists auto-tuned: N/A)"))
+                else:
+                    # IVFFlat: good balance of speed & recall
+                    cursor.execute(
+                        f"""
+                        CREATE INDEX IF NOT EXISTS {VECTOR_TABLE_NAME}_{VECTOR_COLUMN}_ivfflat_idx
+                        ON {VECTOR_TABLE_NAME} USING ivfflat ({VECTOR_COLUMN} vector_cosine_ops)
+                        WITH (lists = {lists});
+                    """
+                    )
+                    self.stdout.write(self.style.SUCCESS(f"IVFFlat vector index created (lists = {lists})"))
+
+                # 5. Optional: Update existing rows (if search_vector is NULL)
+                cursor.execute(
+                    f"""
+                    UPDATE {TSVECTOR_TABLE_NAME}
+                    SET {TSVECTOR_COLUMN} = {update_sql_part}
+                    WHERE {TSVECTOR_COLUMN} IS NULL;
+                """
+                )
+                self.stdout.write(self.style.SUCCESS("Existing rows updated (if needed)"))
             else:
-                # IVFFlat: good balance of speed & recall
-                cursor.execute(
-                    f"""
-                    CREATE INDEX IF NOT EXISTS {VECTOR_TABLE_NAME}_{VECTOR_COLUMN}_ivfflat_idx
-                    ON {VECTOR_TABLE_NAME} USING ivfflat ({VECTOR_COLUMN} vector_cosine_ops)
-                    WITH (lists = {lists});
-                """
-                )
-                self.stdout.write(self.style.SUCCESS(f"IVFFlat vector index created (lists = {lists})"))
-
-            # 5. Optional: Update existing rows (if search_vector is NULL)
-            cursor.execute(
-                f"""
-                UPDATE {TSVECTOR_TABLE_NAME}
-                SET {TSVECTOR_COLUMN} = {update_sql_part}
-                WHERE {TSVECTOR_COLUMN} IS NULL;
-            """
-            )
-            self.stdout.write(self.style.SUCCESS("Existing rows updated (if needed)"))
+                self.stdout.write(self.style.WARNING("Vector dimensions are not fixed, skipping vector index creation"))
 
         self.stdout.write(self.style.SUCCESS("Hybrid search infrastructure ready!"))
