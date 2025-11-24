@@ -20,7 +20,7 @@ class Item(models.Model):
 
 class ItemEmbedding(models.Model):
     item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="embedding")
-    vector = VectorField(dimensions=vector_dimensions, null=True, blank=True)  # OpenAI embedding vector size: 1536
+    vector = VectorField(null=True, blank=True)  # OpenAI embedding vector size: 1536
     model = models.CharField(max_length=50, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -31,7 +31,7 @@ class ItemEmbedding(models.Model):
 
 class QueryEmbedding(models.Model):
     query_hash = models.CharField(max_length=64, unique=True)  # SHA256
-    vector = VectorField(dimensions=vector_dimensions, null=True, blank=True)
+    vector = VectorField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
