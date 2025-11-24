@@ -3,6 +3,7 @@ ARG PYTHON_VER=3.13
 FROM python:${PYTHON_VER} AS builder
 
 ARG PYTHON_VER
+ARG EXTRA=${EXTRA:-"none"}
 # Install uv
 # RUN pip install uv
 # Use an official image to get the uv binary
@@ -12,9 +13,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Install dependencies
-COPY "pyproject.toml" "uv.lock" .
+COPY "pyproject.toml" "uv.lock" ./
 #--locked
-RUN uv sync --locked --no-group dev  --all-groups --extra torch-cpu -p ${PYTHON_VER}
+RUN uv sync --locked --no-group dev  --all-groups --extra ${EXTRA} -p ${PYTHON_VER}
 
 FROM python:${PYTHON_VER}-slim
 

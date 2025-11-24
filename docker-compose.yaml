@@ -19,6 +19,11 @@ services:
     volumes:
 #      - ./dockers/ukrainian_fts.sql:/docker-entrypoint-initdb.d/ukrainian_fts.sql:ro
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: "redis:alpine"
@@ -32,6 +37,9 @@ services:
   backend:
     build:
       context: .
+      dockerfile: Dockerfile
+      args:
+        - EXTRA=${EXTRA:-none}
 
     volumes:
       - ./src:/app/src
@@ -41,8 +49,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - .env
 
