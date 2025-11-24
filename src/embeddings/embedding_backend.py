@@ -28,8 +28,8 @@ class EmbeddingBackend(ABC):
         self, model: str = None, dimensions: int = None, preload: bool = False, client: BaseClient = None, **kwargs
     ):
         self._client = client
-        self.model = model
-        self.dimensions = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
+        self.model: str = model
+        self.dimensions: int = dimensions or settings.VECTOR_EMBEDDING_DIMENSIONS
         self.kwargs = kwargs
         if preload or settings.EMBEDDING_BACKEND_PRELOAD:
             self.get_client()
